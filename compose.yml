@@ -1,0 +1,67 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: cage
+      POSTGRES_USER: cage
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - cage-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cage -d cage"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+  app:
+    build: .
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/cage
+      DB_USER: cage
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+      DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:?Set DATA_ENCRYPTION_KEY}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:?Set DEMO_PASSWORD}
+      DEMO_SEED: ${DEMO_SEED:-true}
+      SIMULATION_CONTROLS: ${SIMULATION_CONTROLS:-true}
+      FILING_MODE: mock
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      KAFKA_ENABLED: ${KAFKA_ENABLED:-false}
+      KAFKA_BOOTSTRAP: kafka:9092
+    depends_on:
+      db:
+        condition: service_healthy
+  kafka:
+    image: apache/kafka:4.1.2
+    profiles: [events]
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    volumes:
+      - kafka-data:/tmp/kraft-combined-logs
+  event-monitor:
+    build: ./event-monitor
+    profiles: [events]
+    ports:
+      - "127.0.0.1:3001:3001"
+    environment:
+      KAFKA_BOOTSTRAP: kafka:9092
+    volumes:
+      - monitor-data:/app/data
+    depends_on:
+      - kafka
+volumes:
+  cage-db:
+  kafka-data:
+  monitor-data:

@@ -1,0 +1,1080 @@
+@if (!ready) {
+<div class="loading-screen">
+  <span class="brand-mark">C</span>
+  <p>Opening CageLedger…</p>
+</div>
+} @else if (!me) {
+<main class="login-layout">
+  <section class="login-story">
+    <div class="brand">
+      <span class="brand-mark">C</span> CageLedger
+      <small>OPERATIONS SUITE</small>
+    </div>
+    <div class="story-copy">
+      <div class="eyebrow">PRECISION AT EVERY HANDOFF</div>
+      <h1>Every transaction.<br />Accounted for.</h1>
+      <p>
+        A connected workspace for casino cage operations, patron relationships,
+        and compliance review.
+      </p>
+      <div class="story-grid">
+        <div><b>01</b><span>Capture activity</span></div>
+        <div><b>02</b><span>Review with context</span></div>
+        <div><b>03</b><span>Reconcile outcomes</span></div>
+      </div>
+    </div>
+    <footer>Built by Sai Srinath · Portfolio demonstration</footer>
+  </section>
+  <section class="login-panel">
+    <div class="login-card">
+      <span class="tag">SYNTHETIC DATA ONLY</span>
+      <h2>Welcome to the cage.</h2>
+      <p class="muted">Sign in to explore a role-specific workspace.</p>
+      <form (ngSubmit)="login()">
+        <label
+          >Demo role<select name="username" [(ngModel)]="username">
+            <option value="analyst">Compliance analyst</option>
+            <option value="cashier">Cage cashier</option>
+            <option value="supervisor">Cage supervisor</option>
+            <option value="approver">Compliance approver</option>
+            <option value="filer">Authorized filer</option>
+            <option value="tax">Tax specialist</option>
+            <option value="admin">Administrator</option>
+            <option value="auditor">Read only auditor</option>
+          </select></label
+        ><label
+          >Password<input
+            type="password"
+            name="password"
+            [(ngModel)]="password"
+            required
+            autocomplete="current-password"
+            placeholder="Your configured demo password" /></label
+        >@if(error){
+        <div role="alert" class="alert bad">{{error}}</div>
+        }<button class="primary full" [disabled]="busy">
+          {{busy?'Signing in…':'Enter workspace →'}}
+        </button>
+      </form>
+      <div class="demo-note">
+        This independent portfolio project uses fictional patrons, simulated
+        filings, and limited <b>DEMO tax rules</b>. No payments or regulatory
+        submissions are made. See the README for local account setup.
+      </div>
+    </div>
+  </section>
+</main>
+} @else {
+<div class="app-shell">
+  <aside class="sidebar" [class.mobile-open]="drawer">
+    <a class="brand" href="#" (click)="$event.preventDefault();go('dashboard')"
+      ><span class="brand-mark">C</span
+      ><span>CageLedger<small>CASINO OPERATIONS</small></span></a
+    >
+    <div class="workspace-name">
+      <span class="live-dot"></span> Juniper / Demonstration
+    </div>
+    <nav aria-label="Main navigation">
+      @for(m of menu;track m.id){@if(visible(m.id)){@if(m.group){
+      <div class="nav-group">{{m.group}}</div>
+      }<button [class.active]="page===m.id" (click)="go(m.id);drawer=false">
+        <span class="nav-icon">{{m.icon}}</span>{{m.label}}</button
+      >}}
+    </nav>
+    <div class="sidebar-footer">
+      <div class="avatar">{{me['displayName'].slice(0,1)}}</div>
+      <div>
+        <strong>{{me['displayName']}}</strong><small>{{me['roles']}}</small>
+      </div>
+      <button
+        class="icon-button"
+        (click)="logout()"
+        title="Sign out"
+        aria-label="Sign out"
+      >
+        ↗
+      </button>
+    </div>
+  </aside>
+  <div class="main-shell">
+    <header class="topbar">
+      <div>
+        <button
+          class="menu-button"
+          (click)="drawer=!drawer"
+          aria-label="Toggle navigation"
+        >
+          ☰</button
+        ><span class="muted">Workspace</span><span class="slash">/</span
+        ><strong>{{title}}</strong>
+      </div>
+      <div class="topbar-right">
+        <span class="live-dot"></span> Simulation environment
+        <button
+          class="outline compact"
+          (click)="run(load.bind(this),'Refreshed')"
+          [disabled]="busy"
+          aria-label="Refresh data"
+        >
+          ↻ Refresh
+        </button>
+      </div>
+    </header>
+    <main class="content">
+      <div class="page-heading">
+        <div>
+          <div class="eyebrow">JUNIPER CASINO / {{property['zone']}}</div>
+          <h1>{{page==='dashboard'?'The cage, at a glance.':title}}</h1>
+          <p class="muted">
+            {{page==='dashboard'?'A clear view of activity, review queues, and
+            the next handoff.':page==='patrons'?'Know the patron. Preserve the
+            record.':page==='transactions'?'Capture cash activity with a
+            traceable source and an explicit gaming day.':page==='setup'?'Manage
+            your property, definitions, and access.':'Review carefully. Approve
+            independently. Reconcile every outcome.'}}
+          </p>
+        </div>
+        <div class="heading-actions">
+          @if(page==='patrons'&&can('PATRON')){<button
+            class="primary"
+            (click)="newPatron()"
+          >
+            + Create patron</button
+          >}@if(page==='transactions'&&can('TRANSACTION')){<button
+            class="primary"
+            (click)="newTx()"
+          >
+            + Enter transaction</button
+          >}@if((page==='SAR'||page==='TAX')&&tab==='Review'&&can(page)){<button
+            class="primary"
+            (click)="newReport()"
+          >
+            + Create {{page}}</button
+          >}@if(page==='setup'){<button class="primary" (click)="newType()">
+            + Propose type</button
+          >}
+        </div>
+      </div>
+      <div class="environment-banner">
+        <span class="pill-dot"></span
+        ><span
+          ><b>Portfolio sandbox.</b> Synthetic patrons · Simulated filings ·
+          DEMO tax rules · No payments</span
+        ><span class="banner-right">Independent project by Sai Srinath</span>
+      </div>
+      @if(error){
+      <div role="alert" class="alert bad dismiss">
+        {{error}}<button (click)="error=''" aria-label="Dismiss error">
+          ×
+        </button>
+      </div>
+      }@if(toast){
+      <div role="status" class="alert good">{{toast}}</div>
+      }@if(busy){
+      <div class="progress" role="progressbar" aria-label="Loading"></div>
+      } @if(page==='dashboard'){
+      <div class="metrics">
+        <div class="metric">
+          <span>Reportable cash in</span
+          ><strong>{{money(dashboard['cashIn'])}}</strong
+          ><small>Current gaming day · {{dashboard['gamingDay']}}</small>
+        </div>
+        <div class="metric">
+          <span>Reportable cash out</span
+          ><strong>{{money(dashboard['cashOut'])}}</strong
+          ><small>Tracked separately · never offset</small>
+        </div>
+        <div class="metric">
+          <span>Pending review</span><strong>{{dashboard['pending']||0}}</strong
+          ><small>Across your permitted queues</small>
+        </div>
+        <div class="metric">
+          <span>Posted activity</span
+          ><strong>{{dashboard['transactions']||0}}</strong
+          ><small>Transactions this gaming day</small>
+        </div>
+      </div>
+      <div class="dashboard-grid">
+        <section class="panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Recent cage activity</h2>
+              <p class="muted">A traceable record from entry to review.</p>
+            </div>
+            <button class="text-button" (click)="go('transactions')">
+              All transactions ↗
+            </button>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Patron / reference</th>
+                  <th>Activity</th>
+                  <th class="right">Cash</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for(t of dashboard['recent']||[];track t.id){
+                <tr
+                  (click)="show(t,'Transaction')"
+                  tabindex="0"
+                  (keydown.enter)="show(t,'Transaction')"
+                >
+                  <td>
+                    <strong>{{t.patron.legalName}}</strong
+                    ><small>{{t.reference}}</small>
+                  </td>
+                  <td>{{t.typeLabel}}</td>
+                  <td class="right mono">{{money(t.cash)}}</td>
+                  <td>
+                    <span class="badge" [class]="'badge '+badge(t.status)"
+                      >{{label(t.status)}}</span
+                    >
+                  </td>
+                </tr>
+                }@empty{
+                <tr>
+                  <td colspan="4" class="empty">
+                    No activity this gaming day.
+                  </td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <section class="attention">
+          <div class="eyebrow">YOUR NEXT HANDOFF</div>
+          <h2>Needs a closer look.</h2>
+          <div class="attention-row">
+            <span>Outstanding acknowledgments</span
+            ><b>{{dashboard['awaiting']||0}}</b>
+          </div>
+          <div class="attention-row">
+            <span>External rejections</span><b>{{dashboard['rejected']||0}}</b>
+          </div>
+          <div class="attention-row">
+            <span>Overdue obligations</span><b>{{dashboard['overdue']||0}}</b>
+          </div>
+          <p>
+            Approval, transmission, and acknowledgment are separate facts. Each
+            has a place in the record.
+          </p>
+        </section>
+      </div>
+      <section class="panel task-panel">
+        <div class="panel-heading">
+          <div>
+            <h2>Compliance work queue</h2>
+            <p class="muted">
+              Source changes and unresolved exceptions remain visible.
+            </p>
+          </div>
+          <span class="count">{{(dashboard['tasks']||[]).length}} open</span>
+        </div>
+        @for(t of dashboard['tasks']||[];track t.id){
+        <div class="task-row">
+          <span class="badge neutral">{{t.scope}}</span
+          ><strong>{{t.title}}</strong>@if(can(t.scope)){<button
+            class="text-button"
+            (click)="resolveTask(t)"
+          >
+            Resolve</button
+          >}@if(t.reportId){<button class="text-button" (click)="go(t.scope)">
+            Open queue ↗</button
+          >}
+        </div>
+        }@empty{
+        <div class="empty">No unresolved tasks within your role.</div>
+        }
+      </section>
+      <div class="journey">
+        <div>
+          <div class="eyebrow">A CONNECTED CONTROL TRAIL</div>
+          <h2>From the cage<br />to a reconciled record.</h2>
+        </div>
+        <div class="journey-stages">
+          <span>Patron</span><i>→</i><span>Transaction</span><i>→</i
+          ><span>Review</span><i>→</i><span>Mock filing</span>
+        </div>
+        <p>
+          Gaming day starts at {{property['cutoff']}} · {{property['zone']}}<br />Reportable
+          directions remain separate.
+        </p>
+      </div>
+      } @else { @if(isReport){
+      <div class="tabs" role="tablist">
+        @for(t of reportTabs;track t){<button
+          role="tab"
+          [attr.aria-selected]="tab===t"
+          [class.active]="tab===t"
+          (click)="switchTab(t)"
+        >
+          {{page==='TAX'&&t==='Review'?'Tax Review':t}}</button
+        >}
+      </div>
+      @if(page==='TAX'){
+      <div class="alert neutral">
+        DEMO RULES · Limited 2026 fixtures, not a complete tax engine. W-9 is
+        retained internally; 1098 is ineligible for jackpots. Foreign payees
+        require specialist review.
+      </div>
+      }} @if(page==='setup'){
+      <div class="setup-top">
+        <section class="panel property-card">
+          <div class="eyebrow">PROPERTY PROFILE</div>
+          <h2>{{property['name']}}</h2>
+          <p>{{property['zone']}} · Gaming day begins {{property['cutoff']}}</p>
+          <p class="muted">
+            {{property['reportingScope']}} · {{property['contact']}}
+          </p>
+          <button class="outline" (click)="propertyEdit()">
+            Edit property
+          </button>
+        </section>
+        <section class="panel property-card">
+          <div class="eyebrow">GOVERNANCE</div>
+          <h2>Definitions need a second set of eyes.</h2>
+          <p class="muted">
+            Propose a type as administrator. Activate it as an independent
+            compliance approver. Active historical mappings are cloned before
+            changes.
+          </p>
+          <span class="badge good">Maker / approver control</span>
+        </section>
+      </div>
+      <h2 class="section-title">Transaction definitions</h2>
+      }
+      <section class="panel">
+        <div class="toolbar">
+          <div class="search">
+            <span>⌕</span
+            ><input
+              aria-label="Search records"
+              [(ngModel)]="query"
+              (ngModelChange)="pageIndex=0"
+              placeholder="Search by patron, ID, reference, or status…"
+            />
+          </div>
+          <div class="toolbar-actions">
+            @if(page!=='setup'){<select
+              aria-label="Filter status"
+              [(ngModel)]="filter"
+              (change)="pageIndex=0"
+            >
+              <option value="">All statuses</option>
+              @for(s of
+              page==='patrons'?['VERIFIED','UNVERIFIED','EXPIRED','REFUSED']:['DRAFT','POSTED','PENDING_REVIEW','APPROVED','RETURNED','VOIDED','PREPARED','EXPORTED','AWAITING_RESPONSE','RESPONSE_RECEIVED'];track
+              s){
+              <option [value]="s">{{label(s)}}</option>
+              }</select
+            >}@if(isReport&&tab==='Review'&&can('FILE')){<button
+              class="primary"
+              [disabled]="!selected.length||busy"
+              (click)="makeBatch()"
+            >
+              Prepare batch ({{selected.length}})</button
+            >}<span class="count">{{filtered.length}} records</span>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                @if(page==='patrons'||tab==='W-9 Register'){
+                <th>Patron</th>
+                <th>Identity / loyalty</th>
+                <th>Verification</th>
+                <th>{{tab==='W-9 Register'?'Certification':'Residency'}}</th>
+                <th></th>
+                } @else if(page==='transactions'){
+                <th>Transaction / patron</th>
+                <th>Type / treatment</th>
+                <th class="right">Gross / cash</th>
+                <th>Gaming day</th>
+                <th>Status</th>
+                <th></th>
+                } @else if(page==='setup'){
+                <th>Definition</th>
+                <th>Currency mapping</th>
+                <th>Effective from</th>
+                <th>Status</th>
+                <th>Actions</th>
+                } @else if(tab==='Batch'){
+                <th>Batch</th>
+                <th>Created / filer</th>
+                <th>Transport state</th>
+                <th>Response scenario</th>
+                <th></th>
+                } @else{
+                <th>
+                  @if(can('FILE')&&tab==='Review'){<span class="sr-only"
+                    >Select</span
+                  >}Report / patron
+                </th>
+                <th>{{page==='TAX'?'Form / rule':'Gaming day / deadline'}}</th>
+                <th class="right">{{page==='CTR'?'Cash in / out':'Amount'}}</th>
+                <th>Internal state</th>
+                <th>External outcome</th>
+                <th></th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for(r of rows;track r['id']){ @if(page==='patrons'||tab==='W-9
+              Register'){
+              <tr>
+                <td>
+                  <button class="row-link" (click)="show(r)">
+                    {{r['legalName']}}</button
+                  ><small
+                    >P-{{r['id'].toString().padStart(4,'0')}}
+                    @if(r['mergedInto']){· Merged →
+                    {{r['mergedInto'].id}}}</small
+                  >
+                </td>
+                <td class="mono">
+                  {{r['identityMasked']}}<small
+                    >{{r['loyaltyId']||'No loyalty account'}}</small
+                  >
+                </td>
+                <td>
+                  <span [class]="'badge '+badge(r['identityStatus'])"
+                    >{{r['identityStatus']}}</span
+                  >
+                </td>
+                <td>
+                  {{tab==='W-9
+                  Register'?label(r['w9Status']):label(r['residency'])}}
+                </td>
+                <td class="right">
+                  @if(tab==='W-9 Register'&&can('TAX')){<button
+                    class="outline compact"
+                    (click)="w9(r)"
+                  >
+                    Update W-9</button
+                  >}@else{<button class="text-button" (click)="show(r)">
+                    View →</button
+                  >}
+                </td>
+              </tr>
+              } @else if(page==='transactions'){
+              <tr>
+                <td>
+                  <button class="row-link" (click)="show(r)">
+                    TX-{{r['id'].toString().padStart(5,'0')}}</button
+                  ><small>{{r['patron'].legalName}}</small>
+                </td>
+                <td>
+                  {{r['typeLabel']}}<small class="treatment"
+                    >{{label(r['treatment'])}}</small
+                  >
+                </td>
+                <td class="right mono">
+                  {{money(r['gross'])}}<small>{{money(r['cash'])}} cash</small>
+                </td>
+                <td>
+                  {{r['gamingDay']}}<small
+                    >{{r['gamingCutoff']}} · {{r['propertyZone']}}</small
+                  >
+                </td>
+                <td>
+                  <span [class]="'badge '+badge(r['status'])"
+                    >{{label(r['status'])}}</span
+                  >
+                </td>
+                <td>
+                  <button class="text-button" (click)="show(r)">View →</button>
+                </td>
+              </tr>
+              } @else if(page==='setup'){
+              <tr>
+                <td>
+                  <strong>{{r['label']}}</strong
+                  ><small class="mono">{{r['code']}} · v{{r['version']}}</small>
+                </td>
+                <td>{{label(r['treatment'])}}</td>
+                <td>{{r['effectiveFrom']}}</td>
+                <td>
+                  <span [class]="'badge '+badge(r['active']?'APPROVED':'DRAFT')"
+                    >{{r['active']?'ACTIVE':r['state']}}</span
+                  >
+                </td>
+                <td>
+                  <button class="text-button" (click)="newType(r)">Clone</button
+                  >@if(r['active']){<button
+                    class="text-button danger"
+                    (click)="confirmAction('Type',r,'deactivate')"
+                  >
+                    Deactivate</button
+                  >}
+                </td>
+              </tr>
+              } @else if(tab==='Batch'){
+              <tr>
+                <td>
+                  <button class="row-link" (click)="show(r)">
+                    MOCK-{{r['kind']}}-{{r['id'].toString().padStart(4,'0')}}</button
+                  ><small>{{r['schemaVersion']}}</small>
+                </td>
+                <td>{{date(r['createdAt'])}}<small>{{r['creator']}}</small></td>
+                <td>
+                  <span [class]="'badge '+badge(r['status'])"
+                    >{{label(r['status'])}}</span
+                  >
+                </td>
+                <td>{{label(r['scenario'])}}</td>
+                <td>
+                  <button class="text-button" (click)="show(r)">
+                    Drill down →
+                  </button>
+                </td>
+              </tr>
+              } @else{
+              <tr>
+                <td>
+                  <div class="report-id">
+                    @if(can('FILE')&&tab==='Review'&&r['status']==='APPROVED'){<input
+                      type="checkbox"
+                      [attr.aria-label]="'Select report '+r['id']"
+                      [checked]="selected.includes(r['id'])"
+                      (change)="select(r['id'],$event)"
+                    />}<button class="row-link" (click)="show(r)">
+                      {{page}}-{{r['id'].toString().padStart(4,'0')}}
+                    </button>
+                  </div>
+                  <small>{{r['patron'].legalName}}</small>
+                </td>
+                <td>
+                  {{page==='TAX'?r['formType']:r['gamingDay']}}<small
+                    >{{page==='TAX'?r['taxRuleVersion']:'Due
+                    '+r['dueDate']}}</small
+                  >
+                </td>
+                <td class="right mono">
+                  {{money(page==='CTR'?r['cashIn']:r['amount'])}}@if(page==='CTR'){<small
+                    >{{money(r['cashOut'])}} out</small
+                  >}@if(page==='TAX'){<small
+                    >{{money(r['withholding'])}} withheld</small
+                  >}
+                </td>
+                <td>
+                  <span [class]="'badge '+badge(r['status'])"
+                    >{{label(r['status'])}}</span
+                  ><small>Revision {{r['revision']}}</small>
+                </td>
+                <td>
+                  <span [class]="'badge '+badge(r['externalOutcome'])"
+                    >{{label(r['externalOutcome'])}}</span
+                  >
+                </td>
+                <td>
+                  <button class="text-button" (click)="show(r)">
+                    Review →
+                  </button>
+                </td>
+              </tr>
+              } }@empty{
+              <tr>
+                <td colspan="6">
+                  <div class="empty">
+                    <div class="empty-icon">▤</div>
+                    <h3>No records to show.</h3>
+                    <p>Try a different search or begin a new workflow.</p>
+                  </div>
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <span
+            >Page {{pageIndex+1}} of {{maxPage}} · {{filtered.length}}
+            records</span
+          >
+          <div>
+            <button
+              class="outline compact"
+              [disabled]="pageIndex===0"
+              (click)="pageIndex=pageIndex-1"
+            >
+              ← Previous</button
+            ><button
+              class="outline compact"
+              [disabled]="pageIndex+1>=maxPage"
+              (click)="pageIndex=pageIndex+1"
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      </section>
+      @if(can('APPROVE')&&page==='transactions'){
+      <section class="panel property-card">
+        <h2>Pending type approvals</h2>
+        @for(t of types;track t['id']){@if(t['state']==='PROPOSED'){
+        <p>
+          {{t['label']}} · {{t['createdBy']}}
+          <button
+            class="outline compact"
+            (click)="confirmAction('Type',t,'activate')"
+          >
+            Approve & activate
+          </button>
+        </p>
+        }}
+      </section>
+      } @if(page==='setup'){
+      <h2 class="section-title">Policy proposals</h2>
+      <div class="config-grid">
+        @for(c of configs;track c['id']){
+        <section class="panel property-card">
+          <span class="eyebrow">{{label(c['code'])}}</span>
+          <pre>{{pretty(c['payload'])}}</pre>
+          <button class="outline compact" (click)="configEdit(c)">
+            Propose change
+          </button>
+        </section>
+        }
+      </div>
+      <section class="panel">
+        <div class="panel-heading">
+          <div>
+            <h2>Users & roles</h2>
+            <p class="muted">Administrator does not grant SAR access.</p>
+          </div>
+          <button class="outline" (click)="newUser()">+ Create user</button>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Account</th>
+                <th>Role</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for(u of users;track u['id']){
+              <tr>
+                <td>
+                  <strong>{{u['displayName']}}</strong
+                  ><small>{{u['username']}}</small>
+                </td>
+                <td>{{u['roles']}}</td>
+                <td>
+                  <span class="badge good"
+                    >{{u['enabled']?'Enabled':'Disabled'}}</span
+                  >
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+      } }
+      <footer class="page-footer">
+        <span>CageLedger · Java 17 / Spring Boot / Angular / PostgreSQL</span
+        ><span>Independent portfolio project · Sai Srinath ↗</span>
+      </footer>
+    </main>
+  </div>
+</div>
+@if(detail){
+<div class="overlay" (click)="close()"></div>
+<section
+  class="detail-drawer"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Record details"
+>
+  <header>
+    <div>
+      <span class="eyebrow">{{detailType}} RECORD</span>
+      <h2>
+        {{detailType==='Patron'?detail['legalName']:detailType==='Batch'?'MOCK-'+detail['kind']+'
+        batch #'+detail['id']:detailType==='Report'?detail['kind']+'
+        #'+detail['id']:'Transaction #'+detail['id']}}
+      </h2>
+    </div>
+    <button class="icon-button" (click)="close()" aria-label="Close details">
+      ×
+    </button>
+  </header>
+  <div class="detail-body">
+    <div class="detail-tabs">
+      <button
+        [class.active]="detailTab==='Details'"
+        (click)="detailTab='Details'"
+      >
+        Details</button
+      ><button
+        [class.active]="detailTab==='History'"
+        (click)="detailTab='History'"
+      >
+        Audit history ({{history.length}})
+      </button>
+    </div>
+    @if(detailTab==='History'){@for(a of history;track a['id']){
+    <article class="audit-entry">
+      <span class="badge neutral">{{a['action']}}</span
+      ><strong>{{a['actor']}}</strong><small>{{date(a['occurredAt'])}}</small>
+      <p>{{a['reason']}}</p>
+      <details>
+        <summary>Before / after</summary>
+        <pre>{{pretty(a['beforeValue'])}}</pre>
+        <pre>{{pretty(a['afterValue'])}}</pre>
+      </details>
+    </article>
+    }@empty{
+    <p class="empty">No visible history for this record.</p>
+    }} @else { @if(detailType==='Patron'){
+    <div class="record-grid">
+      <label>Patron ID<strong>P-{{detail['id']}}</strong></label
+      ><label
+        >Verification<span [class]="'badge '+badge(detail['identityStatus'])"
+          >{{detail['identityStatus']}}</span
+        ></label
+      ><label>Date of birth<strong>{{detail['dateOfBirth']}}</strong></label
+      ><label>Residency<strong>{{detail['residency']}}</strong></label
+      ><label>Identification<strong>{{detail['identityMasked']}}</strong></label
+      ><label>TIN<strong>{{detail['tinMasked']}}</strong></label
+      ><label class="wide">Address<strong>{{detail['address']}}</strong></label
+      ><label>Contact<strong>{{detail['contact']}}</strong></label
+      ><label>Loyalty account<strong>{{detail['loyaltyId']}}</strong></label>
+    </div>
+    <div class="action-bar">
+      @if(can('PATRON')&&!detail['mergedInto']){<button
+        class="primary"
+        (click)="newPatron(detail)"
+      >
+        Edit profile</button
+      >}@if(can('SUPERVISE')&&!detail['mergedInto']){<button
+        class="outline"
+        (click)="merge(detail)"
+      >
+        Merge profile</button
+      >}@if(can('TAX')){<button class="outline" (click)="w9(detail)">
+        W-9 lifecycle</button
+      >}
+    </div>
+    } @if(detailType==='Transaction'){
+    <div class="record-hero">
+      <span>{{detail['typeLabel']}}</span>
+      <h2>{{money(detail['gross'])}}</h2>
+      <span [class]="'badge '+badge(detail['status'])"
+        >{{detail['status']}}</span
+      >
+    </div>
+    <div class="record-grid">
+      <label>Patron<strong>{{detail['patron'].legalName}}</strong></label
+      ><label>Cash component<strong>{{money(detail['cash'])}}</strong></label
+      ><label
+        >Reportable cash in<strong>{{money(detail['cashIn'])}}</strong></label
+      ><label
+        >Reportable cash out<strong>{{money(detail['cashOut'])}}</strong></label
+      ><label>Gaming day<strong>{{detail['gamingDay']}}</strong></label
+      ><label
+        >Cutoff / zone<strong
+          >{{detail['gamingCutoff']}} / {{detail['propertyZone']}}</strong
+        ></label
+      ><label>Event time<strong>{{date(detail['occurredAt'])}}</strong></label
+      ><label>Currency treatment<strong>{{detail['treatment']}}</strong></label
+      ><label
+        >Source event<strong class="wrap">{{detail['sourceId']}}</strong></label
+      ><label>Reference<strong>{{detail['reference']}}</strong></label
+      ><label
+        >Conductor<strong
+          >{{detail['conductor']?.legalName||'Same as beneficiary'}}</strong
+        ></label
+      ><label>Cashier<strong>{{detail['cashier']}}</strong></label>
+    </div>
+    <div class="action-bar">
+      @if(can('TRANSACTION')&&['DRAFT','POSTED'].includes(detail['status'])){@if(detail['status']==='DRAFT'){<button
+        class="primary"
+        (click)="confirmAction('Transaction',detail,'post')"
+      >
+        Post draft</button
+      >}@if(detail['status']==='DRAFT'||can('SUPERVISE')){<button
+        class="outline"
+        (click)="newTx(detail)"
+      >
+        Correct / edit</button
+      ><button
+        class="outline danger"
+        (click)="confirmAction('Transaction',detail,'void')"
+      >
+        Void with reason</button
+      >}}<button class="outline" (click)="receipt()">
+        Download demo receipt
+      </button>
+    </div>
+    } @if(detailType==='Report'){
+    <div class="alert neutral">
+      SIMULATED {{detail['kind']}} · revision {{detail['revision']}} ·
+      {{detail['filingType']}} @if(detail['corrects']){· Corrects
+      #{{detail['corrects'].id}}}
+    </div>
+    <div class="record-grid">
+      <label>Patron<strong>{{detail['patron'].legalName}}</strong></label
+      ><label>Deadline<strong>{{detail['dueDate']}}</strong></label
+      ><label
+        >Internal state<span [class]="'badge '+badge(detail['status'])"
+          >{{label(detail['status'])}}</span
+        ></label
+      ><label
+        >External outcome<span
+          [class]="'badge '+badge(detail['externalOutcome'])"
+          >{{label(detail['externalOutcome'])}}</span
+        ></label
+      ><label
+        >Transport state<strong
+          >{{label(detail['filingStatus'])}}</strong
+        ></label
+      ><label
+        >Created / approved by<strong
+          >{{detail['creator']}} / {{detail['approver']||'Awaiting
+          approval'}}</strong
+        ></label
+      >@if(detail['kind']==='CTR'){<label
+        >Reportable cash in<strong>{{money(detail['cashIn'])}}</strong></label
+      ><label
+        >Reportable cash out<strong>{{money(detail['cashOut'])}}</strong></label
+      >}@else{<label
+        >Report amount<strong>{{money(detail['amount'])}}</strong></label
+      ><label
+        >{{detail['kind']==='TAX'?'Demo withholding':'Activity
+        category'}}<strong
+          >{{detail['kind']==='TAX'?money(detail['withholding']):label(detail['category'])}}</strong
+        ></label
+      >}@if(detail['kind']==='SAR'){<label class="wide"
+        >Restricted synthetic narrative<strong
+          >{{detail['narrative']}}</strong
+        ></label
+      >}@if(detail['kind']==='TAX'){<label
+        >Form / rule<strong
+          >{{detail['formType']}} / {{detail['taxRuleVersion']}}</strong
+        ></label
+      >}@if(detail['externalId']){<label class="wide"
+        >Simulator acknowledgment ID<strong
+          >{{detail['externalId']}}</strong
+        ></label
+      >}
+    </div>
+    <div class="action-bar">
+      <button class="outline" (click)="validate()">Validate demo record</button
+      >@if(can(detail['kind'])){@if(!detail['snapshot']&&!['REJECTED_INTERNALLY','SUPERSEDED'].includes(detail['status'])){<button
+        class="outline"
+        (click)="newReport(detail)"
+      >
+        Edit draft</button
+      >@if(['DRAFT','RETURNED'].includes(detail['status'])){<button
+        class="primary"
+        (click)="confirmAction('Report',detail,'review')"
+      >
+        Send for review</button
+      >}@if(can('APPROVE')&&detail['status']==='PENDING_REVIEW'){<button
+        class="primary"
+        (click)="confirmAction('Report',detail,'approve')"
+      >
+        Approve revision</button
+      ><button
+        class="outline"
+        (click)="confirmAction('Report',detail,'return')"
+      >
+        Return</button
+      ><button
+        class="outline danger"
+        (click)="confirmAction('Report',detail,'reject')"
+      >
+        Reject internally</button
+      >@if(detail['kind']==='SAR'){<button
+        class="outline"
+        (click)="confirmAction('Report',detail,'close')"
+      >
+        Close without filing</button
+      >}}}@if(detail['snapshot']){<button
+        class="outline"
+        (click)="confirmAction('Report',detail,'correction')"
+      >
+        Create correction version</button
+      >}}@if(detail['kind']==='TAX'&&can('TAX')){<button
+        class="outline"
+        (click)="recipient()"
+      >
+        Demo recipient copy</button
+      >}
+    </div>
+    <h3>Additional report subjects</h3>
+    @for(subject of subjects;track subject['id']){
+    <p>{{subject['patron'].legalName}} · {{subject['relationship']}}</p>
+    }@if(can(detail['kind'])&&!detail['snapshot']){<button
+      class="outline compact"
+      (click)="linkSubject()"
+    >
+      + Link subject</button
+    >}
+    <h3>Report versions</h3>
+    @for(v of versions;track v['id']){
+    <details class="version">
+      <summary>
+        Revision {{v['revision']}} · {{v['actor']}} · {{v['reason']}}
+      </summary>
+      <pre>{{pretty(v['snapshot'])}}</pre>
+    </details>
+    }@if(detail['snapshot']){
+    <details class="version">
+      <summary>Frozen filed snapshot</summary>
+      <pre>{{pretty(detail['snapshot'])}}</pre>
+    </details>
+    }} @if(detailType==='Batch'){
+    <div class="alert neutral">
+      SIMULATION ONLY · {{detail['schemaVersion']}} · No regulator communication
+    </div>
+    <div class="record-grid">
+      <label>Transport status<strong>{{label(detail['status'])}}</strong></label
+      ><label>Scenario<strong>{{detail['scenario']}}</strong></label
+      ><label class="wide"
+        >Transport receipt<strong
+          >{{detail['transportReceipt']||'Not yet confirmed'}}</strong
+        ></label
+      ><label class="wide"
+        >SHA-256 export checksum<strong class="wrap mono"
+          >{{detail['checksum']||'Export to calculate'}}</strong
+        ></label
+      >
+    </div>
+    <div class="action-bar">
+      @if(can('FILE')){@if(['PREPARED','EXPORTED'].includes(detail['status'])){<button
+        class="outline"
+        (click)="downloadBatch(detail)"
+      >
+        Export mock JSON</button
+      ><button class="primary" (click)="batchAction(detail,'submit')">
+        Submit to simulator</button
+      >}@if(['AWAITING_RESPONSE','TRANSPORT_FAILED'].includes(detail['status'])){<button
+        class="primary"
+        (click)="batchAction(detail,'reconcile')"
+      >
+        Reconcile simulated response</button
+      >}}
+    </div>
+    <h3>Included report snapshots</h3>
+    @for(item of items;track item['id']){
+    <details class="version">
+      <summary>
+        Report #{{item['report'].id}} · revision {{item['revision']}} ·
+        {{label(item['outcome'])}}
+      </summary>
+      <p>{{item['message']}}</p>
+      <pre>{{pretty(item['snapshot'])}}</pre>
+    </details>
+    }@if(detail['rawResponse']){
+    <details class="version">
+      <summary>Raw simulator response</summary>
+      <pre>{{pretty(detail['rawResponse'])}}</pre>
+    </details>
+    }} @if(['Report','Patron','Transaction'].includes(detailType)){
+    <h3>Supporting evidence · synthetic files only</h3>
+    @for(a of attachments;track a['id']){
+    <p>
+      <a
+        class="text-button"
+        [href]="'/api/attachments/'+a['id']+'/download'"
+        download
+        >{{a['filename']}} ↗</a
+      ><small>{{a['bytes']}} bytes · {{a['uploadedBy']}}</small>
+    </p>
+    }@if(detailType==='Report'?can(detail['kind']):detailType==='Patron'?can('PATRON'):can('TRANSACTION')){<label
+      class="evidence-upload"
+      >Attach synthetic text, PDF, PNG, JPEG (max 1 MiB)<input
+        type="file"
+        accept="text/plain,application/pdf,image/png,image/jpeg"
+        (change)="uploadEvidence($event)" /></label
+    >}}@if(linked.length){
+    <h3>
+      {{detailType==='Report'?'Source activity (including excluded / reversed
+      entries)':'Linked transactions'}}
+    </h3>
+    <div class="linked-records">
+      @for(t of linked;track t['id']){<button (click)="show(t,'Transaction')">
+        <span
+          >TX-{{t['id']}} · {{t['typeLabel']}}<small
+            >{{t['gamingDay']}} · {{t['status']}} · {{t['treatment']}}</small
+          ></span
+        ><strong>{{money(t['cash'])}}</strong></button
+      >}
+    </div>
+    } }
+  </div>
+</section>
+} @if(modal){
+<div class="modal-overlay">
+  <section
+    class="modal"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="modal"
+  >
+    <header>
+      <div>
+        <span class="eyebrow">DEMONSTRATION WORKFLOW</span>
+        <h2>{{modal}}</h2>
+      </div>
+      <button class="icon-button" (click)="modal=''" aria-label="Close form">
+        ×
+      </button>
+    </header>
+    <form (ngSubmit)="save()">
+      <div class="modal-fields">
+        @if(error){
+        <div role="alert" class="alert bad wide">{{error}}</div>
+        }@for(f of fields;track f.key){<label [class.wide]="f.type==='textarea'"
+          >{{f.label}} @if(f.required){<span class="required" aria-hidden="true"
+            >*</span
+          >}@if(f.type==='select'){<select
+            [attr.aria-label]="f.label"
+            [name]="f.key"
+            [(ngModel)]="form[f.key]"
+            [required]="!!f.required"
+          >
+            <option [ngValue]="''">Select…</option>
+            @for(o of f.options;track o.value){
+            <option [ngValue]="o.value">{{o.label}}</option>
+            }</select
+          >}@else if(f.type==='textarea'){<textarea
+            [attr.aria-label]="f.label"
+            [name]="f.key"
+            [(ngModel)]="form[f.key]"
+            [required]="!!f.required"
+            rows="4"
+            maxlength="8000"
+          ></textarea
+          >}@else{<input
+            [attr.aria-label]="f.label"
+            [name]="f.key"
+            [type]="f.type||'text'"
+            [(ngModel)]="form[f.key]"
+            [required]="!!f.required"
+            [attr.step]="f.type==='number'?'0.01':null"
+            [attr.min]="f.type==='number'?'0':null"
+            [readonly]="!!f.readonly"
+            autocomplete="off"
+          />}</label
+        >}
+      </div>
+      <footer>
+        <span>Changes are recorded in the audit trail.</span
+        ><button type="button" class="outline" (click)="modal=''">Cancel</button
+        ><button type="submit" class="primary" [disabled]="busy">
+          {{busy?'Saving…':'Confirm & save'}}
+        </button>
+      </footer>
+    </form>
+  </section>
+</div>
+} }

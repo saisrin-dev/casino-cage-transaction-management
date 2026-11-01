@@ -1,0 +1,66 @@
+name: Build and test
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: cage_test
+          POSTGRES_USER: cage
+          POSTGRES_PASSWORD: ci-only-database
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U cage -d cage_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DB_URL: jdbc:postgresql://localhost:5432/cage_test
+      DB_USER: cage
+      DB_PASSWORD: ci-only-database
+      DATA_ENCRYPTION_KEY: U3ludGhldGljRGVtb0tleTAxMjM0NTY3ODlBQkNERUY=
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci && npm run build
+        working-directory: frontend
+      - run: mkdir -p backend/src/main/resources/static && cp -r frontend/dist/cage/browser/. backend/src/main/resources/static/
+      - run: mvn -B -f backend/pom.xml verify
+      - run: npm ci && npm test
+        working-directory: event-monitor
+      - run: cmake -S native-validator -B native-validator/build && cmake --build native-validator/build && ctest --test-dir native-validator/build --output-on-failure
+      - run: javac -d desktop-client/build desktop-client/CageDesktop.java
+      - name: Browser smoke tests
+        env:
+          DEMO_SEED: 'true'
+          DEMO_PASSWORD: Integration-Test-2026
+          SIMULATION_CONTROLS: 'true'
+        run: |
+          java -jar backend/target/casino-cage-1.0.0.jar > /tmp/cage-server.log 2>&1 &
+          for attempt in $(seq 1 90); do curl -fsS http://localhost:8080/actuator/health/readiness && break; sleep 2; done
+          cd frontend
+          npx playwright install --with-deps chromium
+          npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: diagnostics
+          path: |
+            backend/target/surefire-reports
+            frontend/test-results
+            frontend/playwright-report

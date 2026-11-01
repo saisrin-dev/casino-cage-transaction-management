@@ -1,0 +1,16 @@
+**/target/
+**/node_modules/
+**/dist/
+**/.angular/
+**/build/
+**/test-results/
+**/playwright-report/
+backend/src/main/resources/static/
+.env
+*.log
+*.class
+*.zip
+.idea/
+.vscode/
+.DS_Store
+data/

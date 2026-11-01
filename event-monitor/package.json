@@ -1,0 +1,1 @@
+{"name":"cage-event-monitor","private":true,"version":"1.0.0","type":"module","engines":{"node":">=22.12.0"},"scripts":{"start":"node src/server.js","test":"node --test"},"dependencies":{"kafkajs":"2.2.4"}}
