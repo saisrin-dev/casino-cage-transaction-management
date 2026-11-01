@@ -1,1 +1,49 @@
-{"version":1,"projects":{"cage":{"projectType":"application","root":"","sourceRoot":"src","architect":{"build":{"builder":"@angular/build:application","options":{"browser":"src/main.ts","index":"src/index.html","tsConfig":"tsconfig.json","styles":["src/styles.css"],"outputPath":"dist/cage","polyfills":["zone.js"]},"configurations":{"production":{"outputHashing":"all","budgets":[{"type":"initial","maximumWarning":"750kB","maximumError":"1MB"}]}}},"serve":{"builder":"@angular/build:dev-server","options":{"buildTarget":"cage:build"}}}}},"cli":{"analytics":false}}
+{
+  "version": 1,
+  "projects": {
+    "cage": {
+      "projectType": "application",
+      "root": "",
+      "sourceRoot": "src",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "src/main.ts",
+            "index": "src/index.html",
+            "tsConfig": "tsconfig.json",
+            "styles": [
+              "src/styles.css"
+            ],
+            "outputPath": "dist/cage",
+            "polyfills": [
+              "zone.js"
+            ]
+          },
+          "configurations": {
+            "production": {
+              "outputHashing": "all",
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "750kB",
+                  "maximumError": "1MB"
+                }
+              ]
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "options": {
+            "buildTarget": "cage:build"
+          }
+        }
+      }
+    }
+  },
+  "cli": {
+    "analytics": false
+  }
+}

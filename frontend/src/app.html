@@ -1,70 +1,3 @@
-@if (!ready) {
-<div class="loading-screen">
-  <span class="brand-mark">C</span>
-  <p>Opening CageLedger…</p>
-</div>
-} @else if (!me) {
-<main class="login-layout">
-  <section class="login-story">
-    <div class="brand">
-      <span class="brand-mark">C</span> CageLedger
-      <small>OPERATIONS SUITE</small>
-    </div>
-    <div class="story-copy">
-      <div class="eyebrow">PRECISION AT EVERY HANDOFF</div>
-      <h1>Every transaction.<br />Accounted for.</h1>
-      <p>
-        A connected workspace for casino cage operations, patron relationships,
-        and compliance review.
-      </p>
-      <div class="story-grid">
-        <div><b>01</b><span>Capture activity</span></div>
-        <div><b>02</b><span>Review with context</span></div>
-        <div><b>03</b><span>Reconcile outcomes</span></div>
-      </div>
-    </div>
-    <footer>Built by Sai Srinath · Portfolio demonstration</footer>
-  </section>
-  <section class="login-panel">
-    <div class="login-card">
-      <span class="tag">SYNTHETIC DATA ONLY</span>
-      <h2>Welcome to the cage.</h2>
-      <p class="muted">Sign in to explore a role-specific workspace.</p>
-      <form (ngSubmit)="login()">
-        <label
-          >Demo role<select name="username" [(ngModel)]="username">
-            <option value="analyst">Compliance analyst</option>
-            <option value="cashier">Cage cashier</option>
-            <option value="supervisor">Cage supervisor</option>
-            <option value="approver">Compliance approver</option>
-            <option value="filer">Authorized filer</option>
-            <option value="tax">Tax specialist</option>
-            <option value="admin">Administrator</option>
-            <option value="auditor">Read only auditor</option>
-          </select></label
-        ><label
-          >Password<input
-            type="password"
-            name="password"
-            [(ngModel)]="password"
-            required
-            autocomplete="current-password"
-            placeholder="Your configured demo password" /></label
-        >@if(error){
-        <div role="alert" class="alert bad">{{error}}</div>
-        }<button class="primary full" [disabled]="busy">
-          {{busy?'Signing in…':'Enter workspace →'}}
-        </button>
-      </form>
-      <div class="demo-note">
-        This independent portfolio project uses fictional patrons, simulated
-        filings, and limited <b>DEMO tax rules</b>. No payments or regulatory
-        submissions are made. See the README for local account setup.
-      </div>
-    </div>
-  </section>
-</main>
-} @else {
 <div class="app-shell">
   <aside class="sidebar" [class.mobile-open]="drawer">
     <a class="brand" href="#" (click)="$event.preventDefault();go('dashboard')"
@@ -77,22 +10,22 @@
     <nav aria-label="Main navigation">
       @for(m of menu;track m.id){@if(visible(m.id)){@if(m.group){
       <div class="nav-group">{{m.group}}</div>
-      }<button [class.active]="page===m.id" (click)="go(m.id);drawer=false">
+      }<button [class.active]="page===m.id" (click)="m.id==='entry'?startEntry():go(m.id);drawer=false">
         <span class="nav-icon">{{m.icon}}</span>{{m.label}}</button
       >}}
     </nav>
     <div class="sidebar-footer">
-      <div class="avatar">{{me['displayName'].slice(0,1)}}</div>
+      <div class="avatar">{{'D'}}</div>
       <div>
-        <strong>{{me['displayName']}}</strong><small>{{me['roles']}}</small>
+        <strong>Demo visitor</strong><small>LOCAL SANDBOX</small>
       </div>
       <button
         class="icon-button"
-        (click)="logout()"
-        title="Sign out"
-        aria-label="Sign out"
+        (click)="resetDemo()"
+        title="Reset demo"
+        aria-label="Reset demo"
       >
-        ↗
+        ↻
       </button>
     </div>
   </aside>
@@ -109,10 +42,10 @@
         ><strong>{{title}}</strong>
       </div>
       <div class="topbar-right">
-        <span class="live-dot"></span> Simulation environment
+        <span class="live-dot"></span> Browser-local demo
         <button
           class="outline compact"
-          (click)="run(load.bind(this),'Refreshed')"
+          (click)="run(asyncNoop,'Refreshed')"
           [disabled]="busy"
           aria-label="Refresh data"
         >
@@ -123,15 +56,13 @@
     <main class="content">
       <div class="page-heading">
         <div>
-          <div class="eyebrow">JUNIPER CASINO / {{property['zone']}}</div>
-          <h1>{{page==='dashboard'?'The cage, at a glance.':title}}</h1>
+          <div class="eyebrow">OPERATIONS COMMAND CENTER / {{property['zone']}}</div>
+          <h1>{{page==='dashboard'?'Every detail. In view.':title}}</h1>
           <p class="muted">
             {{page==='dashboard'?'A clear view of activity, review queues, and
             the next handoff.':page==='patrons'?'Know the patron. Preserve the
-            record.':page==='transactions'?'Capture cash activity with a
-            traceable source and an explicit gaming day.':page==='setup'?'Manage
-            your property, definitions, and access.':'Review carefully. Approve
-            independently. Reconcile every outcome.'}}
+            record.':page==='transactions'?'Capture cash activity with a traceable source and an explicit gaming day.':page==='setup'?'Manage
+            your property, definitions, and access.':'Explore review, simulated approvals, and filing outcomes.'}}
           </p>
         </div>
         <div class="heading-actions">
@@ -142,7 +73,7 @@
             + Create patron</button
           >}@if(page==='transactions'&&can('TRANSACTION')){<button
             class="primary"
-            (click)="newTx()"
+            (click)="startEntry()"
           >
             + Enter transaction</button
           >}@if((page==='SAR'||page==='TAX')&&tab==='Review'&&can(page)){<button
@@ -159,9 +90,10 @@
         <span class="pill-dot"></span
         ><span
           ><b>Portfolio sandbox.</b> Synthetic patrons · Simulated filings ·
-          DEMO tax rules · No payments</span
+          DEMO tax rules · Saved only in this browser</span
         ><span class="banner-right">Independent project by Sai Srinath</span>
       </div>
+      @if(store.storageWarning){<div class="alert warn">{{store.storageWarning}}</div>}
       @if(error){
       <div role="alert" class="alert bad dismiss">
         {{error}}<button (click)="error=''" aria-label="Dismiss error">
@@ -172,7 +104,40 @@
       <div role="status" class="alert good">{{toast}}</div>
       }@if(busy){
       <div class="progress" role="progressbar" aria-label="Loading"></div>
-      } @if(page==='dashboard'){
+      }
+      @if(page==='entry'){
+      <div class="entry-layout">
+        <section class="panel entry-panel">
+          <div class="panel-heading"><div><div class="eyebrow">NEW CASH ACTIVITY</div><h2>Enter a transaction</h2><p class="muted">A clear record, from patron to receipt.</p></div><span class="badge good">USD</span></div>
+          <form (ngSubmit)="submitEntry()" class="entry-form">
+            <div class="entry-step"><b>01</b><div><h3>Patron & activity</h3><p>Select who and what this transaction is for.</p></div></div>
+            <div class="form-grid">
+              <label>Patron <span class="required">*</span><select name="entryPatron" aria-label="Transaction patron" [(ngModel)]="txForm['patronId']" required><option value="">Select a patron</option>@for(p of patronOptions();track p.value){<option [ngValue]="p.value">{{p.label}}</option>}</select></label>
+              <label>Transaction type <span class="required">*</span><select name="entryType" aria-label="Transaction type" [(ngModel)]="txForm['typeId']" required><option value="">Select activity</option>@for(t of types;track t['id']){@if(t['active']){<option [ngValue]="t['id']">{{t['label']}}</option>}}</select></label>
+            </div>
+            <div class="entry-step"><b>02</b><div><h3>Amounts & reference</h3><p>Record the actual cash component separately.</p></div></div>
+            <div class="form-grid">
+              <label>Gross amount (USD) *<input name="entryGross" aria-label="Transaction gross amount" type="number" min="0.01" step="0.01" required [(ngModel)]="txForm['gross']" placeholder="0.00"></label>
+              <label>Cash component (USD) *<input name="entryCash" aria-label="Transaction cash amount" type="number" min="0" step="0.01" required [(ngModel)]="txForm['cash']" placeholder="0.00"></label>
+              <label>Reference *<input name="entryReference" aria-label="Transaction reference" required [(ngModel)]="txForm['reference']" placeholder="e.g. DEMO-RECEIPT-001"></label>
+              <label>Cage / station *<select name="entryStation" [(ngModel)]="txForm['station']"><option>Main cage</option><option>VIP cage</option><option>East cage</option></select></label>
+              <label>Timestamp (ISO with offset) *<input name="entryTime" required [(ngModel)]="txForm['occurredAt']"></label>
+              <label>Save as<select name="entryStatus" [(ngModel)]="txForm['status']"><option value="POSTED">Post transaction</option><option value="DRAFT">Save draft</option></select></label>
+            </div>
+            <label>Notes<textarea name="entryNotes" rows="2" [(ngModel)]="txForm['notes']" placeholder="Add a synthetic activity note"></textarea></label>
+            <label>Entry reason *<input name="entryReason" required [(ngModel)]="txForm['reason']"></label>
+            <div class="entry-actions"><button type="button" class="outline" (click)="go('transactions')">View transactions</button><button type="submit" class="primary" [disabled]="busy">{{busy?'Saving…':'Save transaction →'}}</button></div>
+          </form>
+        </section>
+        <aside class="entry-summary">
+          <div class="summary-card"><div class="eyebrow">TRANSACTION PREVIEW</div><h2>{{cashPreview}}</h2><p>Actual cash component</p><hr><label>Patron<strong>{{entryPatron?.['legalName']||'Select a patron'}}</strong></label><label>Activity<strong>{{entryType?.['label']||'Select a transaction type'}}</strong></label><label>Currency treatment<strong>{{entryType?.['treatment']||'—'}}</strong></label><span class="badge">BROWSER-LOCAL RECORD</span></div>
+          <div class="entry-tip"><h3>A traceable handoff</h3><p>Posted cash activity is grouped by patron and gaming day. Cash in and cash out are tracked separately. Crossing $10,000 in either direction creates a demo CTR review.</p><small>06:00 cutoff · America/New_York</small></div>
+          @if(txSaved){<div class="saved-card" role="status"><span class="badge good">SAVED SUCCESSFULLY</span><h3>TX-{{txSaved['id']}}</h3><p>{{txSaved['patron'].legalName}}</p><strong>{{money(txSaved['cash'])}}</strong><p>{{txSaved['status']}} · {{txSaved['gamingDay']}}</p><button type="button" class="outline" (click)="show(txSaved,'Transaction')">View record & receipt ↗</button></div>}
+        </aside>
+      </div>
+      }
+ @if(page==='dashboard'){
+      <section class="dashboard-welcome"><div><div class="eyebrow">CAGELEDGER / INTERACTIVE DEMO</div><h2>Your operations. One connected workspace.</h2><p>Explore patron profiles, record cash activity, and follow the compliance handoff.</p></div><button class="primary" (click)="startEntry()">+ New transaction</button></section>
       <div class="metrics">
         <div class="metric">
           <span>Reportable cash in</span
@@ -247,7 +212,7 @@
         </section>
         <section class="attention">
           <div class="eyebrow">YOUR NEXT HANDOFF</div>
-          <h2>Needs a closer look.</h2>
+          <h2>Stay ahead of<br>the next handoff.</h2><div class="bar-chart" aria-label="Cash volume across the six most recent demo transactions">@for(t of dashboard['recent']||[];track t.id){<span [style.height.%]="Math.min(100,Number(t.cash)/150)"></span>}</div><div class="bar-caption"><span>RECENT CASH ACTIVITY</span><span>USD</span></div>
           <div class="attention-row">
             <span>Outstanding acknowledgments</span
             ><b>{{dashboard['awaiting']||0}}</b>
@@ -304,7 +269,7 @@
           directions remain separate.
         </p>
       </div>
-      } @else { @if(isReport){
+      } @else if(page!=='entry') { @if(isReport){
       <div class="tabs" role="tablist">
         @for(t of reportTabs;track t){<button
           role="tab"
@@ -338,11 +303,9 @@
           <div class="eyebrow">GOVERNANCE</div>
           <h2>Definitions need a second set of eyes.</h2>
           <p class="muted">
-            Propose a type as administrator. Activate it as an independent
-            compliance approver. Active historical mappings are cloned before
-            changes.
+            Explore proposed types and simulated approval states. This open sandbox has no authenticated roles or enforced separation of duties.
           </p>
-          <span class="badge good">Maker / approver control</span>
+          <span class="badge good">Simulated approval workflow</span>
         </section>
       </div>
       <h2 class="section-title">Transaction definitions</h2>
@@ -638,45 +601,10 @@
         </section>
         }
       </div>
-      <section class="panel">
-        <div class="panel-heading">
-          <div>
-            <h2>Users & roles</h2>
-            <p class="muted">Administrator does not grant SAR access.</p>
-          </div>
-          <button class="outline" (click)="newUser()">+ Create user</button>
-        </div>
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Account</th>
-                <th>Role</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for(u of users;track u['id']){
-              <tr>
-                <td>
-                  <strong>{{u['displayName']}}</strong
-                  ><small>{{u['username']}}</small>
-                </td>
-                <td>{{u['roles']}}</td>
-                <td>
-                  <span class="badge good"
-                    >{{u['enabled']?'Enabled':'Disabled'}}</span
-                  >
-                </td>
-              </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <section class="panel property-card"><div class="eyebrow">YOUR SANDBOX</div><h2>Explore freely. Start fresh anytime.</h2><p>All features are open without login. Changes and synthetic attachments stay in this browser. Reset restores the sample records.</p><button class="outline" (click)="resetDemo()">Reset demo data</button></section>
       } }
       <footer class="page-footer">
-        <span>CageLedger · Java 17 / Spring Boot / Angular / PostgreSQL</span
+        <span>CageLedger · Angular / TypeScript · Browser-local demo</span
         ><span>Independent portfolio project · Sai Srinath ↗</span>
       </footer>
     </main>
@@ -850,7 +778,7 @@
           >{{detail['kind']==='TAX'?money(detail['withholding']):label(detail['category'])}}</strong
         ></label
       >}@if(detail['kind']==='SAR'){<label class="wide"
-        >Restricted synthetic narrative<strong
+        >Synthetic investigation narrative<strong
           >{{detail['narrative']}}</strong
         ></label
       >}@if(detail['kind']==='TAX'){<label
@@ -982,8 +910,7 @@
     <p>
       <a
         class="text-button"
-        [href]="'/api/attachments/'+a['id']+'/download'"
-        download
+        href="#" (click)="$event.preventDefault();downloadEvidence(a)"
         >{{a['filename']}} ↗</a
       ><small>{{a['bytes']}} bytes · {{a['uploadedBy']}}</small>
     </p>
@@ -1075,4 +1002,4 @@
     </form>
   </section>
 </div>
-} }
+} 

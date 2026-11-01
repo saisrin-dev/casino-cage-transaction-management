@@ -1,3 +1,4 @@
+import { DemoStore } from "./demo-store";
 import { Component, HostListener, signal } from "@angular/core";
 import { bootstrapApplication } from "@angular/platform-browser";
 import { CommonModule } from "@angular/common";
@@ -18,14 +19,43 @@ type Field = {
   templateUrl: "./app.html",
 })
 class App {
+  newSourceId() { return typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : 'DEMO-' + Date.now() + '-' + Math.random().toString(36).slice(2); }
+  Math = Math;
+  Number = Number;
+  asyncNoop = async () => {};
+  store = new DemoStore((() => { try { return window.localStorage; } catch { return null; } })());
   me: Row | null = null;
+  txForm: Row = {};
+  txSaved: Row | null = null;
+  get entryType() { return this.types.find(t => t['id'] === +this.txForm['typeId']); }
+  get entryPatron() { return this.patrons.find(p => p['id'] === +this.txForm['patronId']); }
+  get cashPreview() { return this.money(this.txForm['cash']); }
+  startEntry() {
+    this.txForm = {sourceId: this.newSourceId(), occurredAt: new Date().toISOString(), station: 'Main cage', status: 'POSTED', gross: '', cash: '', reason: 'Synthetic demo entry'};
+    this.txSaved = null;
+    this.go('entry');
+  }
+  async submitEntry() {
+    const ok = await this.run(async () => { this.txSaved = await this.api('/transactions', 'POST', this.txForm); }, 'Transaction saved in this browser');
+    if (ok) { this.txForm = {...this.txForm, sourceId: this.newSourceId(), gross: '', cash: '', reference: ''}; }
+  }
+  downloadEvidence(a: Row) {
+    const raw = atob(a['data'].split(',')[1]);
+    const bytes = Uint8Array.from(raw, ch => ch.charCodeAt(0));
+    const url = URL.createObjectURL(new Blob([bytes], {type: 'application/octet-stream'}));
+    const link = document.createElement('a'); link.href = url; link.download = a['filename']; link.click(); URL.revokeObjectURL(url);
+  }
+  resetDemo() {
+    this.open('Reset browser demo', [this.f('confirmation','Type RESET to restore sample data','text',true)], {}, async v => {
+      if (v['confirmation'] !== 'RESET') throw Error('Type RESET to confirm.');
+      this.store.reset(); this.detail = null; this.txSaved = null;
+    });
+  }
+
   ready = false;
   busy = false;
   error = "";
   toast = "";
-  csrf = "";
-  username = "analyst";
-  password = "";
   demo: Row = {};
   page = "dashboard";
   tab = "Review";
@@ -62,6 +92,7 @@ class App {
     { id: "dashboard", label: "Overview", icon: "◈", group: "WORKSPACE" },
     { id: "patrons", label: "Subject Manager", icon: "◎" },
     { id: "transactions", label: "Transaction Manager", icon: "⇄" },
+    { id: "entry", label: "Transaction Entry", icon: "+" },
     { id: "CTR", label: "CTR Manager", icon: "▤", group: "COMPLIANCE" },
     { id: "SAR", label: "SAR Manager", icon: "◇" },
     { id: "TAX", label: "Tax Forms Manager", icon: "▧" },
@@ -76,40 +107,12 @@ class App {
     this.init();
   }
   async init() {
-    try {
-      this.demo = await this.api("/demo");
-      await this.token();
-      try {
-        this.me = await this.api("/me");
-      } catch {}
-      if (this.me) await this.load();
-    } catch (e) {
-      this.error = this.message(e);
-    } finally {
-      this.ready = true;
-    }
-  }
-  async token() {
-    this.csrf = (await this.api("/csrf")).token;
+    try { this.demo = await this.api('/demo'); this.me = await this.api('/me'); await this.load(); }
+    catch(e) { this.error = this.message(e); }
+    finally { this.ready = true; }
   }
   async api(path: string, method = "GET", body?: any): Promise<any> {
-    let response = await fetch("/api" + path, {
-      method,
-      credentials: "same-origin",
-      headers: {
-        ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
-        ...(method !== "GET" ? { "X-CSRF-TOKEN": this.csrf } : {}),
-      },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-    if (!response.ok) {
-      const data = await response
-        .json()
-        .catch(() => ({ message: response.statusText }));
-      throw Error(data.message || "Request failed");
-    }
-    if (response.status === 204) return null;
-    return response.json().catch(() => null);
+    return this.store.request(path, method, body);
   }
   message(e: any) {
     return e?.message || String(e);
@@ -122,60 +125,12 @@ class App {
   }
   visible(id: string) {
     return (
-      id === "dashboard" ||
+      id === "dashboard" || id === "entry" ||
       (id === "setup" && this.can("SETUP")) ||
       (id === "patrons" && this.read("PATRON")) ||
       (id === "transactions" && this.read("TRANSACTION")) ||
       (["CTR", "SAR", "TAX"].includes(id) && this.read(id))
     );
-  }
-  async login() {
-    this.busy = true;
-    this.error = "";
-    try {
-      const body = new URLSearchParams({
-        username: this.username,
-        password: this.password,
-      });
-      const r = await fetch("/api/login", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-          "X-CSRF-TOKEN": this.csrf,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body,
-      });
-      if (!r.ok) throw Error("Incorrect username or password");
-      this.password = "";
-      await this.token();
-      this.me = await this.api("/me");
-      await this.load();
-    } catch (e) {
-      this.error = this.message(e);
-    } finally {
-      this.busy = false;
-    }
-  }
-  async logout() {
-    await this.api("/logout", "POST");
-    this.me = null;
-    this.detail = null;
-    this.data = [];
-    this.patrons = [];
-    this.reports = [];
-    this.batches = [];
-    this.dashboard = {};
-    this.history = [];
-    this.versions = [];
-    this.items = [];
-    this.linked = [];
-    this.users = [];
-    this.configs = [];
-    this.attachments = [];
-    this.subjects = [];
-    this.page = "dashboard";
-    await this.token();
   }
   async run(fn: () => Promise<any>, message = "Saved successfully") {
     this.busy = true;
@@ -209,7 +164,8 @@ class App {
     this.patrons = await this.api("/patrons");
     this.types = await this.api("/types");
     this.property = await this.api("/property");
-    if (this.page === "dashboard") {
+    if (this.page === "entry") { this.data = []; }
+    else if (this.page === "dashboard") {
       this.dashboard = await this.api("/dashboard");
       this.data = [];
     } else if (this.page === "patrons") this.data = this.patrons;
@@ -439,11 +395,11 @@ class App {
           patronId: t["patron"].id,
           typeId: t["type"].id,
           conductorId: t["conductor"]?.id || "",
-          sourceId: crypto.randomUUID(),
+          sourceId: this.newSourceId(),
           occurredAt: t["occurredAt"],
         }
       : {
-          sourceId: crypto.randomUUID(),
+          sourceId: this.newSourceId(),
           occurredAt: new Date().toISOString(),
           station: "Main cage",
           gross: "",
@@ -905,19 +861,8 @@ class App {
   async uploadEvidence(event: any) {
     const file = event.target.files?.[0];
     if (!file || !this.detail) return;
-    const body = new FormData();
-    body.set("ownerType", this.detailType);
-    body.set("ownerId", this.detail["id"]);
-    body.set("reason", "Synthetic demonstration evidence uploaded");
-    body.set("file", file);
-    await this.run(async () => {
-      const r = await fetch("/api/attachments", {
-        method: "POST",
-        headers: { "X-CSRF-TOKEN": this.csrf },
-        body,
-      });
-      if (!r.ok) throw Error((await r.json()).message);
-    }, "Synthetic evidence attached");
+    const current = this.detail;
+    await this.run(() => this.store.attach(file, this.detailType, current!['id']), "Evidence saved in this browser");
     await this.show(this.detail, this.detailType);
   }
   linkSubject() {

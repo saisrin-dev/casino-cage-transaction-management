@@ -1,3 +1,11 @@
+# CageLedger — Open Casino Cage Demo
+
+The default deployment now opens without login or an external database. It runs Angular with browser-local synthetic data, hosted by a lightweight Node server. See [UPDATE-DEMO.md](UPDATE-DEMO.md) for installation, Render deployment, transaction entry, and limitations.
+
+**Public sandbox only:** no authenticated permissions, real patron data, real filings, or payments. Each browser has separate records. Clearing browser storage or resetting the demo restores sample data. The Java/Spring Boot/PostgreSQL implementation remains below as the original backend reference; its setup instructions do not apply to the default browser demo.
+
+---
+
 # CageLedger — Casino Cage & Compliance
 
 An independent portfolio application by **Sai Srinath**. Patron and cage transaction management, CTR review, restricted SAR work queues, demonstration tax forms, and deterministic filing simulation.

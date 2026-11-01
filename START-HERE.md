@@ -1,3 +1,11 @@
+# Current deployment: open browser demo
+
+Follow [UPDATE-DEMO.md](UPDATE-DEMO.md). No login, PostgreSQL, Docker Desktop, or encryption key is required for the default hosted demo. Transaction Entry is available from the sidebar and dashboard.
+
+The instructions below describe the retained original backend implementation, not the current default public demo.
+
+---
+
 # Start here — Sai Srinath
 
 This folder is the source for your new **CageLedger / Casino Cage Management** portfolio project. It has not yet been pushed to GitHub or deployed.

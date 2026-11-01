@@ -1,0 +1,1 @@
+{"name":"cageledger-browser-demo","private":true,"scripts":{"dev":"node demo-server.mjs","start":"node demo-server.mjs","test":"node --experimental-strip-types --test frontend/test/demo-store.test.mjs"}}

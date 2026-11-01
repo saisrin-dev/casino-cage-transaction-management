@@ -45,14 +45,12 @@ jobs:
         working-directory: event-monitor
       - run: cmake -S native-validator -B native-validator/build && cmake --build native-validator/build && ctest --test-dir native-validator/build --output-on-failure
       - run: javac -d desktop-client/build desktop-client/CageDesktop.java
+      - name: Browser-local simulator tests
+        run: npm test
       - name: Browser smoke tests
-        env:
-          DEMO_SEED: 'true'
-          DEMO_PASSWORD: Integration-Test-2026
-          SIMULATION_CONTROLS: 'true'
         run: |
-          java -jar backend/target/casino-cage-1.0.0.jar > /tmp/cage-server.log 2>&1 &
-          for attempt in $(seq 1 90); do curl -fsS http://localhost:8080/actuator/health/readiness && break; sleep 2; done
+          node demo-server.mjs > /tmp/cage-server.log 2>&1 &
+          for attempt in $(seq 1 30); do curl -fsS http://localhost:8080/actuator/health/readiness && break; sleep 1; done
           cd frontend
           npx playwright install --with-deps chromium
           npm run test:e2e
