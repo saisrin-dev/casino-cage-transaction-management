@@ -337,7 +337,9 @@ class WorkflowIntegrationTest {
                 "treatment",
                 "IN",
                 "reason",
-                "Test approved cash mapping"));
+                "Test approved cash mapping",
+"effectiveFrom",
+at.atZone(ZoneId.of("America/New_York")).toLocalDate().toString()));
     assertThrows(IllegalArgumentException.class, () -> s.typeAction(t.id, "activate", update(t)));
     as("other-approver", "APPROVE");
     s.typeAction(t.id, "activate", update(t));
