@@ -1,91 +1,14 @@
 <div class="app-shell">
-  <aside class="sidebar" [class.mobile-open]="drawer">
-    <a class="brand" href="#" (click)="$event.preventDefault();go('dashboard')"
-      ><span class="brand-mark">C</span
-      ><span>CageLedger<small>CASINO OPERATIONS</small></span></a
-    >
-    <div class="workspace-name">
-      <span class="live-dot"></span> Juniper / Demonstration
-    </div>
-    <nav aria-label="Main navigation">
-      @for(m of menu;track m.id){@if(visible(m.id)){@if(m.group){
-      <div class="nav-group">{{m.group}}</div>
-      }<button [class.active]="page===m.id" (click)="m.id==='entry'?startEntry():go(m.id);drawer=false">
-        <span class="nav-icon">{{m.icon}}</span>{{m.label}}</button
-      >}}
-    </nav>
-    <div class="sidebar-footer">
-      <div class="avatar">{{'D'}}</div>
-      <div>
-        <strong>Demo visitor</strong><small>LOCAL SANDBOX</small>
-      </div>
-      <button
-        class="icon-button"
-        (click)="resetDemo()"
-        title="Reset demo"
-        aria-label="Reset demo"
-      >
-        ↻
-      </button>
-    </div>
+  <aside class="sidebar enterprise-rail" [class.mobile-open]="drawer">
+    <a class="rail-brand" href="#" aria-label="CageLedger home" (click)="$event.preventDefault();go('dashboard')"><svg viewBox="0 0 36 36" aria-hidden="true"><path d="M18 2 32 10v16l-14 8L4 26V10z" fill="currentColor"/><path d="m24 12-6-3-8 5v9l8 5 6-3M24 18h-7" fill="none" stroke="white" stroke-width="3"/></svg></a>
+    <nav aria-label="Main navigation">@for(m of menu;track m.id){<button [class.active]="page===m.id" [attr.aria-label]="m.label" [title]="m.label" (click)="m.id==='entry'?startEntry():go(m.id);drawer=false"><svg viewBox="0 0 30 30" aria-hidden="true"><path [attr.d]="iconPath(m.id==='dashboard'?'home':m.id==='patrons'?'subject':m.id==='entry'?'plus':m.id==='transactions'?'transaction':m.id==='CTR'?'check':m.id==='SAR'?'search':m.id==='TAX'?'tax':'settings')"/></svg></button>}</nav>
+    <button class="rail-reset" (click)="resetDemo()" title="Reset demo" aria-label="Reset demo"><svg viewBox="0 0 30 30" aria-hidden="true"><path d="M6 11a10 10 0 1 1-1 8M6 5v7h7"/></svg></button>
   </aside>
   <div class="main-shell">
-    <header class="topbar">
-      <div>
-        <button
-          class="menu-button"
-          (click)="drawer=!drawer"
-          aria-label="Toggle navigation"
-        >
-          ☰</button
-        ><span class="muted">Workspace</span><span class="slash">/</span
-        ><strong>{{title}}</strong>
-      </div>
-      <div class="topbar-right">
-        <span class="live-dot"></span> Browser-local demo
-        <button
-          class="outline compact"
-          (click)="run(asyncNoop,'Refreshed')"
-          [disabled]="busy"
-          aria-label="Refresh data"
-        >
-          ↻ Refresh
-        </button>
-      </div>
-    </header>
+    <header class="topbar enterprise-topbar"><div class="app-title"><svg class="app-logo" viewBox="0 0 36 36" aria-hidden="true"><path d="M18 2 32 10v16l-14 8L4 26V10z" fill="currentColor"/><path d="m24 12-6-3-8 5v9l8 5 6-3M24 18h-7" fill="none" stroke="white" stroke-width="3"/></svg><b>CageLedger</b><span class="app-title-divider">|</span><span>Cage Transaction Management</span></div><div class="topbar-right"><span class="sandbox-chip">Synthetic demo</span><button class="outline compact" (click)="go('dashboard')">Home</button><button class="outline compact" (click)="run(asyncNoop,'Refreshed')" aria-label="Refresh data" [disabled]="busy">Refresh</button></div></header>
     <main class="content">
-      <div class="page-heading">
-        <div>
-          <div class="eyebrow">OPERATIONS COMMAND CENTER / {{property['zone']}}</div>
-          <h1>{{page==='dashboard'?'Every detail. In view.':title}}</h1>
-          <p class="muted">
-            {{page==='dashboard'?'A clear view of activity, review queues, and
-            the next handoff.':page==='patrons'?'Know the patron. Preserve the
-            record.':page==='transactions'?'Capture cash activity with a traceable source and an explicit gaming day.':page==='setup'?'Manage
-            your property, definitions, and access.':'Explore review, simulated approvals, and filing outcomes.'}}
-          </p>
-        </div>
-        <div class="heading-actions">
-          @if(page==='patrons'&&can('PATRON')){<button
-            class="primary"
-            (click)="newPatron()"
-          >
-            + Create patron</button
-          >}@if(page==='transactions'&&can('TRANSACTION')){<button
-            class="primary"
-            (click)="startEntry()"
-          >
-            + Enter transaction</button
-          >}@if((page==='SAR'||page==='TAX')&&tab==='Review'&&can(page)){<button
-            class="primary"
-            (click)="newReport()"
-          >
-            + Create {{page}}</button
-          >}@if(page==='setup'){<button class="primary" (click)="newType()">
-            + Propose type</button
-          >}
-        </div>
-      </div>
+      @if(page!=='dashboard'&&page!=='entry'){
+      <div class="page-heading"><div><div class="eyebrow">WORKSPACE / {{title}}</div><h1>{{title}}</h1></div><div class="heading-actions">@if(page==='patrons'){<button class="primary" (click)="newPatron()">+ Create subject</button>}@if(page==='transactions'){<button class="primary" (click)="startEntry()">+ Transaction entry</button>}@if(page==='SAR'||page==='TAX'){<button class="primary" (click)="newReport()">+ Create {{page}}</button>}@if(page==='setup'){<button class="primary" (click)="newType()">+ Propose type</button>}</div></div>}
       <div class="environment-banner">
         <span class="pill-dot"></span
         ><span
@@ -106,169 +29,63 @@
       <div class="progress" role="progressbar" aria-label="Loading"></div>
       }
       @if(page==='entry'){
-      <div class="entry-layout">
-        <section class="panel entry-panel">
-          <div class="panel-heading"><div><div class="eyebrow">NEW CASH ACTIVITY</div><h2>Enter a transaction</h2><p class="muted">A clear record, from patron to receipt.</p></div><span class="badge good">USD</span></div>
-          <form (ngSubmit)="submitEntry()" class="entry-form">
-            <div class="entry-step"><b>01</b><div><h3>Patron & activity</h3><p>Select who and what this transaction is for.</p></div></div>
-            <div class="form-grid">
-              <label>Patron <span class="required">*</span><select name="entryPatron" aria-label="Transaction patron" [(ngModel)]="txForm['patronId']" required><option value="">Select a patron</option>@for(p of patronOptions();track p.value){<option [ngValue]="p.value">{{p.label}}</option>}</select></label>
-              <label>Transaction type <span class="required">*</span><select name="entryType" aria-label="Transaction type" [(ngModel)]="txForm['typeId']" required><option value="">Select activity</option>@for(t of types;track t['id']){@if(t['active']){<option [ngValue]="t['id']">{{t['label']}}</option>}}</select></label>
-            </div>
-            <div class="entry-step"><b>02</b><div><h3>Amounts & reference</h3><p>Record the actual cash component separately.</p></div></div>
-            <div class="form-grid">
-              <label>Gross amount (USD) *<input name="entryGross" aria-label="Transaction gross amount" type="number" min="0.01" step="0.01" required [(ngModel)]="txForm['gross']" placeholder="0.00"></label>
-              <label>Cash component (USD) *<input name="entryCash" aria-label="Transaction cash amount" type="number" min="0" step="0.01" required [(ngModel)]="txForm['cash']" placeholder="0.00"></label>
-              <label>Reference *<input name="entryReference" aria-label="Transaction reference" required [(ngModel)]="txForm['reference']" placeholder="e.g. DEMO-RECEIPT-001"></label>
-              <label>Cage / station *<select name="entryStation" [(ngModel)]="txForm['station']"><option>Main cage</option><option>VIP cage</option><option>East cage</option></select></label>
-              <label>Timestamp (ISO with offset) *<input name="entryTime" required [(ngModel)]="txForm['occurredAt']"></label>
-              <label>Save as<select name="entryStatus" [(ngModel)]="txForm['status']"><option value="POSTED">Post transaction</option><option value="DRAFT">Save draft</option></select></label>
-            </div>
-            <label>Notes<textarea name="entryNotes" rows="2" [(ngModel)]="txForm['notes']" placeholder="Add a synthetic activity note"></textarea></label>
-            <label>Entry reason *<input name="entryReason" required [(ngModel)]="txForm['reason']"></label>
-            <div class="entry-actions"><button type="button" class="outline" (click)="go('transactions')">View transactions</button><button type="submit" class="primary" [disabled]="busy">{{busy?'Saving…':'Save transaction →'}}</button></div>
-          </form>
-        </section>
-        <aside class="entry-summary">
-          <div class="summary-card"><div class="eyebrow">TRANSACTION PREVIEW</div><h2>{{cashPreview}}</h2><p>Actual cash component</p><hr><label>Patron<strong>{{entryPatron?.['legalName']||'Select a patron'}}</strong></label><label>Activity<strong>{{entryType?.['label']||'Select a transaction type'}}</strong></label><label>Currency treatment<strong>{{entryType?.['treatment']||'—'}}</strong></label><span class="badge">BROWSER-LOCAL RECORD</span></div>
-          <div class="entry-tip"><h3>A traceable handoff</h3><p>Posted cash activity is grouped by patron and gaming day. Cash in and cash out are tracked separately. Crossing $10,000 in either direction creates a demo CTR review.</p><small>06:00 cutoff · America/New_York</small></div>
-          @if(txSaved){<div class="saved-card" role="status"><span class="badge good">SAVED SUCCESSFULLY</span><h3>TX-{{txSaved['id']}}</h3><p>{{txSaved['patron'].legalName}}</p><strong>{{money(txSaved['cash'])}}</strong><p>{{txSaved['status']}} · {{txSaved['gamingDay']}}</p><button type="button" class="outline" (click)="show(txSaved,'Transaction')">View record & receipt ↗</button></div>}
-        </aside>
+      <div class="transaction-workspace" [class.has-subject]="selectedSubject&&profileOpen">
+        <div class="transaction-main">
+          <section class="workspace-section">
+            <div class="section-strip"><button class="strip-toggle" (click)="searchOpen=!searchOpen" [attr.aria-expanded]="searchOpen">Select a Subject</button><button class="strip-action" (click)="newPatron()">+ Create subject</button></div>
+            @if(searchOpen){<form class="subject-search" (ngSubmit)="searchSubjects()">
+              <div class="subject-kind">@for(kind of ['PATRON','ORGANIZATION','UNKNOWN'];track kind){<label><input type="radio" name="subjectKind" [value]="kind" [(ngModel)]="subjectSearch['kind']">{{label(kind)}}</label>}</div>
+              <div class="subject-search-fields">
+                <label>Player Card Number<input aria-label="Player card number" name="card" [(ngModel)]="subjectSearch['card']"></label>
+                <label>Subject Number<input aria-label="Subject number search" name="subjectNo" [(ngModel)]="subjectSearch['number']"></label>
+                <label>First Name / Organization<input aria-label="Subject first name" name="first" [(ngModel)]="subjectSearch['first']"></label>
+                <label>Last Name<input name="last" [(ngModel)]="subjectSearch['last']"></label>
+                <label>Birthdate<input type="date" name="birth" [(ngModel)]="subjectSearch['birth']"></label>
+                <label>Synthetic ID Number<input name="identity" [(ngModel)]="subjectSearch['identity']" placeholder="DEMO-…"></label>
+              </div>
+              <div class="section-actions"><button type="button" class="outline compact" (click)="clearSubjectSearch()">Clear</button><button type="submit" class="primary compact">Search subjects</button></div>
+            </form>}
+          </section>
+          <section class="workspace-section">
+            <div class="section-strip"><button class="strip-toggle" (click)="resultsOpen=!resultsOpen" [attr.aria-expanded]="resultsOpen">Search Results @if(searchedSubjects){· {{searchResults.length}} subject(s) found}</button><span>{{selectedSubject?'Selected: '+selectedSubject['legalName']:'Select a subject to enable entry'}}</span></div>
+            @if(resultsOpen){<div class="table-scroll subject-results"><table><thead><tr><th>Subject Number</th><th>Name</th><th>Player Card</th><th>Birthdate</th><th>Verification</th><th></th></tr></thead><tbody>@for(p of searchResults;track p['id']){<tr [class.chosen]="selectedSubject?.['id']===p['id']"><td>AML{{p['id'].toString().padStart(10,'0')}}</td><td>{{p['legalName']}}</td><td>{{p['loyaltyId']}}</td><td>{{p['dateOfBirth']}}</td><td>{{p['identityStatus']}}</td><td><button class="text-button" (click)="chooseSubject(p)">Select subject</button></td></tr>}@empty{<tr><td colspan="6" class="empty">{{searchedSubjects?'No subjects match. Clear filters or create a synthetic subject.':'Enter search criteria, or search with empty fields to browse subjects.'}}</td></tr>}</tbody></table></div>}
+          </section>
+          <section class="workspace-section">
+            <div class="section-strip"><span>Transaction Entry @if(selectedSubject){<small> / AML{{selectedSubject['id'].toString().padStart(10,'0')}}</small>}</span><div class="strip-buttons"><button class="strip-action" [disabled]="!entrySelected||!['POSTED'].includes(entrySelected['status'])" (click)="beginEditEntry()">Edit / correct</button><button class="strip-action" (click)="cancelEntry()">Cancel entry</button><button class="strip-action" [disabled]="!selectedSubject" (click)="profileOpen=!profileOpen">{{profileOpen?'Hide':'Show'}} subject</button></div></div>
+            <form (ngSubmit)="submitEntry()" class="workspace-entry-form">
+              <div class="transaction-context">
+                <label>Gaming Date<input type="date" name="gamingDay" [(ngModel)]="entryDate" aria-label="Gaming date filter"><small>Ledger filter · entry day uses the 06:00 cutoff</small></label>
+                <label>Transaction Date / Time<input type="datetime-local" name="entryTime" required [(ngModel)]="entryTime"></label>
+                <label>Work Area<select name="entryStation" [(ngModel)]="txForm['station']"><option>Main cage</option><option>VIP cage</option><option>East cage</option></select></label>
+                <label>Site<select name="entrySite" [(ngModel)]="txForm['site']"><option>Juniper</option></select></label>
+                <label>Transaction Type<select aria-label="Transaction type" name="entryType" required [(ngModel)]="txForm['typeId']"><option [ngValue]="undefined">Select…</option>@for(t of types;track t['id']){@if(t['active']){<option [ngValue]="t['id']">{{t['label']}}</option>}}</select></label>
+              </div>
+              <fieldset class="transaction-fields" [disabled]="!selectedSubject||busy">
+                <div class="amount-entry"><div><span class="tender-label">CURRENCY TREATMENT</span><strong>{{entryType?.['treatment']||'Select a type'}}</strong></div><label>Cash Amount (USD)<input aria-label="Transaction cash amount" name="entryCash" type="number" min="0" step="0.01" [(ngModel)]="txForm['cash']" required placeholder="0.00"></label><label>Non-Cash Amount (USD)<input aria-label="Transaction noncash amount" name="entryNoncash" type="number" min="0" step="0.01" [(ngModel)]="txForm['nonCash']" placeholder="0.00"></label><div class="entry-total"><span>Total amount</span><strong>{{money(Number(txForm['cash']||0)+Number(txForm['nonCash']||0))}}</strong></div></div>
+                <div class="reference-row"><label>Source Reference<input aria-label="Transaction reference" name="entryReference" required [(ngModel)]="txForm['reference']"></label><label>Save As<select name="entryStatus" [(ngModel)]="txForm['status']"><option value="POSTED">Post transaction</option><option value="DRAFT">Save draft</option></select></label><label>Entry / Correction Reason<input name="reason" required [(ngModel)]="txForm['reason']"></label></div>
+                <div class="comments-media"><fieldset><legend>Comments</legend><textarea name="entryNotes" [(ngModel)]="txForm['notes']" placeholder="Please type synthetic comments here…" rows="3"></textarea></fieldset><fieldset><legend>Attach Media</legend><label class="media-target">{{pendingEvidence?pendingEvidence.name:'Add synthetic attachments'}}<input aria-label="Transaction evidence" type="file" accept="text/plain,application/pdf,image/png,image/jpeg" (change)="entryFile($event)"><small>Text, PDF, PNG or JPEG · up to 1 MiB · browser-local</small></label></fieldset></div>
+                <div class="section-actions"><span class="entry-subject-hint">{{entryEditing?'Correction retains the original transaction.':'Synthetic demo entry · no payment processed'}}</span><button type="submit" class="primary" [disabled]="busy">{{entryEditing?'Save correction':'Add transaction'}}</button></div>
+              </fieldset>
+            </form>
+            @if(!selectedSubject){<div class="entry-locked">Select a subject from Search Results to begin a transaction.</div>}
+            @if(txSaved){<div class="saved-inline" role="status">Saved TX-{{txSaved['id']}} · {{money(txSaved['gross'])}} · {{txSaved['status']}} <button class="text-button" (click)="show(txSaved,'Transaction')">View record &amp; receipt</button></div>}
+          </section>
+          <section class="workspace-section subject-ledger"><div class="section-strip"><span>Subject's Transactions for this Gaming Date: {{entryDate}}</span><button class="strip-action" [disabled]="!entrySelected||!['POSTED','DRAFT'].includes(entrySelected['status'])" (click)="voidEntry()">Void selected</button></div><div class="table-scroll"><table class="wide-ledger"><thead><tr><th></th><th>Subject Number</th><th>Txn. Date / Time</th><th>Transaction Type</th><th>Cash In</th><th>Cash Out</th><th>Non-Cash In</th><th>Non-Cash Out</th><th>Work Area</th><th>Site</th><th>Source</th><th>Status</th><th></th></tr></thead><tbody>@for(t of subjectTransactions;track t['id']){<tr [class.chosen]="entrySelection===t['id']"><td><input type="radio" name="ledgerSelection" [checked]="entrySelection===t['id']" (change)="entrySelection=t['id']" [attr.aria-label]="'Select transaction '+t['id']"></td><td>AML{{t['patron'].id.toString().padStart(10,'0')}}</td><td>{{date(t['occurredAt'])}}</td><td>{{t['typeLabel']}}</td><td>{{money(t['cashIn'])}}</td><td>{{money(t['cashOut'])}}</td><td>{{money(['IN','BOTH'].includes(t['treatment'])?t['gross']-t['cash']:0)}}</td><td>{{money(['OUT','BOTH','NONCASH','EXCLUDED'].includes(t['treatment'])?t['gross']-t['cash']:0)}}</td><td>{{t['station']}}</td><td>{{t['site']||'Juniper'}}</td><td>{{t['reference']}}</td><td>{{t['status']}}</td><td><button class="text-button" (click)="show(t,'Transaction')">View</button></td></tr>}@empty{<tr><td colspan="13" class="empty">{{selectedSubject?'No activity for this subject and gaming date.':'No subject selected.'}}</td></tr>}</tbody></table></div><div class="grid-footer">Selected {{entrySelection?1:0}} of {{subjectTransactions.length}} · Only this subject and gaming date</div></section>
+        </div>
+        @if(selectedSubject&&profileOpen){<aside class="subject-inspector"><div class="section-strip"><span>AML{{selectedSubject['id'].toString().padStart(10,'0')}}</span><button class="strip-action" (click)="profileOpen=false" aria-label="Close subject profile">×</button></div><div class="inspector-name"><svg viewBox="0 0 30 30" aria-hidden="true"><path [attr.d]="iconPath('person')"/></svg><div><strong>{{selectedSubject['legalName']}}</strong><span>Primary subject · Synthetic</span></div></div><div class="subject-pills"><span>{{selectedSubject['identityStatus']}}</span><span>W-9 {{selectedSubject['w9Status']}}</span></div><h3>Personal Information</h3><dl><dt>Full Name</dt><dd>{{selectedSubject['legalName']}}</dd><dt>Birthdate</dt><dd>{{selectedSubject['dateOfBirth']||'—'}}</dd><dt>Occupation</dt><dd>{{selectedSubject['occupation']||'—'}}</dd><dt>Player Card No.</dt><dd>{{selectedSubject['loyaltyId']||'—'}}</dd><dt>Residency</dt><dd>{{selectedSubject['residency']}}</dd></dl><h3>Address</h3><dl><dt>Residential Address</dt><dd>{{selectedSubject['address']||'—'}}</dd><dt>Country</dt><dd>{{selectedSubject['country']||'—'}}</dd><dt>Contact</dt><dd>{{selectedSubject['contact']||'—'}}</dd></dl><h3>Identification</h3><dl><dt>ID Type</dt><dd>{{selectedSubject['identityType']||'—'}}</dd><dt>ID Number</dt><dd>{{selectedSubject['identityMasked']||'DEMO-••••'}}</dd><dt>TIN</dt><dd>{{selectedSubject['tinMasked']||'DEMO-••••'}}</dd></dl><div class="inspector-actions"><button class="outline compact" (click)="newPatron(selectedSubject)">Edit synthetic profile</button></div></aside>}
       </div>
       }
  @if(page==='dashboard'){
-      <section class="dashboard-welcome"><div><div class="eyebrow">CAGELEDGER / INTERACTIVE DEMO</div><h2>Your operations. One connected workspace.</h2><p>Explore patron profiles, record cash activity, and follow the compliance handoff.</p></div><button class="primary" (click)="startEntry()">+ New transaction</button></section>
-      <div class="metrics">
-        <div class="metric">
-          <span>Reportable cash in</span
-          ><strong>{{money(dashboard['cashIn'])}}</strong
-          ><small>Current gaming day · {{dashboard['gamingDay']}}</small>
-        </div>
-        <div class="metric">
-          <span>Reportable cash out</span
-          ><strong>{{money(dashboard['cashOut'])}}</strong
-          ><small>Tracked separately · never offset</small>
-        </div>
-        <div class="metric">
-          <span>Pending review</span><strong>{{dashboard['pending']||0}}</strong
-          ><small>Across your permitted queues</small>
-        </div>
-        <div class="metric">
-          <span>Posted activity</span
-          ><strong>{{dashboard['transactions']||0}}</strong
-          ><small>Transactions this gaming day</small>
-        </div>
-      </div>
-      <div class="dashboard-grid">
-        <section class="panel">
-          <div class="panel-heading">
-            <div>
-              <h2>Recent cage activity</h2>
-              <p class="muted">A traceable record from entry to review.</p>
-            </div>
-            <button class="text-button" (click)="go('transactions')">
-              All transactions ↗
-            </button>
-          </div>
-          <div class="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Patron / reference</th>
-                  <th>Activity</th>
-                  <th class="right">Cash</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for(t of dashboard['recent']||[];track t.id){
-                <tr
-                  (click)="show(t,'Transaction')"
-                  tabindex="0"
-                  (keydown.enter)="show(t,'Transaction')"
-                >
-                  <td>
-                    <strong>{{t.patron.legalName}}</strong
-                    ><small>{{t.reference}}</small>
-                  </td>
-                  <td>{{t.typeLabel}}</td>
-                  <td class="right mono">{{money(t.cash)}}</td>
-                  <td>
-                    <span class="badge" [class]="'badge '+badge(t.status)"
-                      >{{label(t.status)}}</span
-                    >
-                  </td>
-                </tr>
-                }@empty{
-                <tr>
-                  <td colspan="4" class="empty">
-                    No activity this gaming day.
-                  </td>
-                </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        </section>
-        <section class="attention">
-          <div class="eyebrow">YOUR NEXT HANDOFF</div>
-          <h2>Stay ahead of<br>the next handoff.</h2><div class="bar-chart" aria-label="Cash volume across the six most recent demo transactions">@for(t of dashboard['recent']||[];track t.id){<span [style.height.%]="Math.min(100,Number(t.cash)/150)"></span>}</div><div class="bar-caption"><span>RECENT CASH ACTIVITY</span><span>USD</span></div>
-          <div class="attention-row">
-            <span>Outstanding acknowledgments</span
-            ><b>{{dashboard['awaiting']||0}}</b>
-          </div>
-          <div class="attention-row">
-            <span>External rejections</span><b>{{dashboard['rejected']||0}}</b>
-          </div>
-          <div class="attention-row">
-            <span>Overdue obligations</span><b>{{dashboard['overdue']||0}}</b>
-          </div>
-          <p>
-            Approval, transmission, and acknowledgment are separate facts. Each
-            has a place in the record.
-          </p>
-        </section>
-      </div>
-      <section class="panel task-panel">
-        <div class="panel-heading">
-          <div>
-            <h2>Compliance work queue</h2>
-            <p class="muted">
-              Source changes and unresolved exceptions remain visible.
-            </p>
-          </div>
-          <span class="count">{{(dashboard['tasks']||[]).length}} open</span>
-        </div>
-        @for(t of dashboard['tasks']||[];track t.id){
-        <div class="task-row">
-          <span class="badge neutral">{{t.scope}}</span
-          ><strong>{{t.title}}</strong>@if(can(t.scope)){<button
-            class="text-button"
-            (click)="resolveTask(t)"
-          >
-            Resolve</button
-          >}@if(t.reportId){<button class="text-button" (click)="go(t.scope)">
-            Open queue ↗</button
-          >}
-        </div>
-        }@empty{
-        <div class="empty">No unresolved tasks within your role.</div>
-        }
-      </section>
-      <div class="journey">
-        <div>
-          <div class="eyebrow">A CONNECTED CONTROL TRAIL</div>
-          <h2>From the cage<br />to a reconciled record.</h2>
-        </div>
-        <div class="journey-stages">
-          <span>Patron</span><i>→</i><span>Transaction</span><i>→</i
-          ><span>Review</span><i>→</i><span>Mock filing</span>
-        </div>
-        <p>
-          Gaming day starts at {{property['cutoff']}} · {{property['zone']}}<br />Reportable
-          directions remain separate.
-        </p>
-      </div>
+      <section class="module-home" aria-label="Application modules"><div class="home-intro"><h1>Cage Transaction Management</h1><p>Select a workspace to begin.</p></div><div class="module-grid">@for(m of launcher;track m.id){<article class="module-tile"><button class="module-hex" (click)="launch(m.id)" [attr.aria-label]="'Open '+m.label"><svg viewBox="0 0 30 30" aria-hidden="true"><path [attr.d]="iconPath(m.icon)"/></svg></button><div class="module-content"><button class="module-name" (click)="launch(m.id)">{{m.label}}</button><div class="module-shortcuts">@for(a of m.shortcuts;track a.action){<button (click)="launch(m.id,a.action)" [attr.aria-label]="m.label+' '+a.label" [title]="a.label"><svg viewBox="0 0 30 30" aria-hidden="true"><path [attr.d]="iconPath(a.icon)"/></svg><span>{{a.label}}</span></button>}</div></div></article>}</div><p class="home-disclaimer">Independent portfolio demo · Synthetic records · Browser-local storage · No regulatory submissions</p></section>
+      } @else if(page==='CTR') {
+      <div class="ctr-tabs" role="tablist">@for(t of reportTabs;track t){<button role="tab" [attr.aria-selected]="tab===t" [class.active]="tab===t" (click)="switchTab(t)"><svg viewBox="0 0 30 30" aria-hidden="true"><path [attr.d]="iconPath(t==='Review'?'check':t==='Batch'?'document':'history')"/></svg>CTR {{t}}</button>}</div>
+      @if(tab!=='Batch'){<section class="workspace-section ctr-search-panel"><div class="section-strip"><span>Search CTR {{tab}}</span><span>Simulation only</span></div><div class="ctr-search-fields"><label>CTR Number<input aria-label="CTR number filter" [(ngModel)]="ctrSearch['number']" placeholder="CTR-…"></label><label>Subject Number<input aria-label="CTR subject filter" [(ngModel)]="ctrSearch['subject']" placeholder="AML…"></label><label>First Name<input aria-label="CTR first name filter" [(ngModel)]="ctrSearch['first']"></label><label>Last Name<input [(ngModel)]="ctrSearch['last']"></label><label>Gaming Date<input type="date" [(ngModel)]="ctrSearch['date']"></label><label>State<select [(ngModel)]="ctrSearch['state']"><option value="">All states</option>@for(v of ['DRAFT','PENDING_REVIEW','RETURNED','APPROVED','REJECTED_INTERNALLY'];track v){<option [value]="v">{{label(v)}}</option>}</select></label></div><div class="section-actions"><label class="inline-check"><input type="checkbox" [(ngModel)]="ctrSearch['incomplete']">Incomplete only</label><button class="outline compact" (click)="clearCtrSearch()">Clear filters</button></div></section>}
+      <section class="workspace-section ctr-results"><div class="section-strip"><span>CTR {{tab==='Review'?'Results':tab}} · {{tab==='Batch'?batches.length:ctrRows.length}} records</span><div class="strip-buttons">@if(tab==='Review'){<button class="strip-action" [disabled]="!selected.length||busy" (click)="approveCtrSelection()">Approve selected</button><button class="strip-action" [disabled]="!selected.length||busy" (click)="makeBatch()">Create batch</button>}<button class="strip-action" [disabled]="tab==='Batch'||!ctrRows.length" (click)="exportCtr()">Export CSV</button></div></div>
+      <div class="table-scroll ctr-grid"><table><thead>@if(tab==='Batch'){<tr><th>Batch Number</th><th>Created</th><th>Transport State</th><th>Mock Scenario</th><th>Action</th></tr>}@else{<tr><th>Select</th><th>Actions</th><th>CTR Number</th><th>Gaming Date</th><th>Cash In</th><th>Cash Out</th><th>Patron Cash In</th><th>Patron Cash Out</th><th>Subject Number</th><th>Last Name</th><th>First Name</th><th>Incomplete Form</th><th>Verified</th><th>Approved</th><th>State / Edits</th></tr>}</thead><tbody>
+        @if(tab==='Batch'){@for(b of batches;track b['id']){<tr><td>MOCK-CTR-{{b['id']}}</td><td>{{date(b['createdAt'])}}</td><td>{{label(b['status'])}}</td><td>{{b['scenario']}}</td><td><button class="text-button" (click)="show(b,'Batch')">Open batch</button></td></tr>}@empty{<tr><td colspan="5" class="empty">No simulated batches. Approve and select CTR records to create a batch.</td></tr>}}
+        @else{@for(r of ctrRows;track r['id']){<tr [class.ctr-selected]="selected.includes(r['id'])" [class.ctr-incomplete]="ctrIssues(r).length>0" [class.ctr-approved]="r['status']==='APPROVED'" [class.ctr-returned]="r['status']==='RETURNED'"><td>@if(tab==='Review'){<input type="checkbox" [attr.aria-label]="'Select report '+r['id']" [checked]="selected.includes(r['id'])" (change)="select(r['id'],$event)">}</td><td><button class="grid-icon" (click)="show(r,'Report')" [attr.aria-label]="'View CTR '+r['id']"><svg viewBox="0 0 30 30" aria-hidden="true"><path [attr.d]="iconPath('search')"/></svg></button>@if(!r['snapshot']){<button class="grid-icon" (click)="newReport(r)" [attr.aria-label]="'Edit CTR '+r['id']"><svg viewBox="0 0 30 30" aria-hidden="true"><path d="m7 20 14-14 4 4-14 14-6 1zM18 9l4 4"/></svg></button>}</td><td><button class="row-link" (click)="show(r,'Report')">CTR-{{r['id']}}</button></td><td>{{r['gamingDay']}}</td><td class="mono">{{money(r['cashIn'])}}</td><td class="mono">{{money(r['cashOut'])}}</td><td class="mono">{{money(r['cashIn'])}}</td><td class="mono">{{money(r['cashOut'])}}</td><td>AML{{r['patron'].id.toString().padStart(10,'0')}}</td><td>{{r['patron'].legalName.split(' ').slice(1).join(' ').replace('[Synthetic]','')}}</td><td>{{r['patron'].legalName.split(' ')[0]}}</td><td><span class="grid-boolean" [class.flagged]="ctrIssues(r).length>0">{{ctrIssues(r).length?'Yes':'No'}}</span></td><td><input type="checkbox" [attr.aria-label]="'Verify CTR '+r['id']" [checked]="!!r['verified']" [disabled]="!!r['snapshot']||busy" (change)="markCtrVerified(r,$event)"></td><td><span class="grid-boolean" [class.confirmed]="r['status']==='APPROVED'">{{r['status']==='APPROVED'?'Yes':'No'}}</span></td><td>{{label(r['status'])}}<small>Revision {{r['revision']}}</small></td></tr>}@empty{<tr><td colspan="15" class="empty">No CTR records match this view. Clear filters or enter reportable cash activity.</td></tr>}}
+      </tbody></table></div><div class="grid-footer">Selected {{selected.length}} of {{tab==='Batch'?batches.length:ctrRows.length}} <span class="grid-legend"><i class="legend-approved"></i>Approved <i class="legend-review"></i>Review <i class="legend-incomplete"></i>Needs attention</span></div></section>
+      <section class="workspace-section ctr-errors"><div class="section-strip"><button class="strip-toggle" [attr.aria-expanded]="ctrErrorsOpen" (click)="ctrErrorsOpen=!ctrErrorsOpen">CTR Errors and Potential Edits {{ctrErrorsOpen?'▾':'▸'}}</button></div>@if(ctrErrorsOpen){<div class="validation-list">@for(r of ctrRows;track r['id']){@if(ctrIssues(r).length){<p><button class="text-button" (click)="show(r,'Report')">CTR-{{r['id']}}</button> · {{ctrIssues(r).join('; ')}}</p>}}<p class="muted">Demo validation checks subject name, address, identity review, and directional threshold. Approvals and filings are simulated.</p></div>}</section>
       } @else if(page!=='entry') { @if(isReport){
       <div class="tabs" role="tablist">
         @for(t of reportTabs;track t){<button

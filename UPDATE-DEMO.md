@@ -1,3 +1,40 @@
+# Light-green reference-style workspace
+
+This cumulative update includes the open browser-demo runtime, a light-green module home, a custom CageLedger hexagon logo, new line icons, subject-search transaction entry with a profile panel, and a wide CTR review grid. No login or PostgreSQL is required.
+
+## Install
+
+Extract Casino-Cage-Light-Green-Workspace-Update.zip directly into `C:\Projects\casino-cage-transaction-management`, replacing matching files. There is no extra project folder inside the ZIP.
+
+```powershell
+cd C:\Projects\casino-cage-transaction-management
+git add Dockerfile Dockerfile.backend demo-server.mjs package.json README.md START-HERE.md UPDATE-DEMO.md frontend/src frontend/test/demo-store.test.mjs frontend/e2e/browser-demo.spec.ts frontend/playwright.config.ts frontend/angular.json .github/workflows/ci.yml
+git commit -m "Add light green workspace, custom icons and entry and CTR screens"
+git push
+```
+
+Wait for Render to deploy this commit, then press Ctrl+F5. Keep Dockerfile ./Dockerfile, build context ., Free compute, and health check /actuator/health/readiness. Existing DB variables are unused by this runtime. Do not delete the old database before checking the new version.
+
+## Use the screens
+
+Home: each manager opens from its large icon or labeled shortcuts. The six modules are Subject, Transaction, SAR, CTR, Setup, and Tax. New green SVG icons and a custom CageLedger logo replace the old icon set. This uses a light-green inspired palette and no FIS or Everi logos.
+
+Transaction Entry: search for a subject by card, number, name, birthdate, or synthetic ID. Search without fields to browse. Select a result, choose an active transaction type, enter cash and optional noncash amounts, reference and reason, then click Add transaction. Comments and one optional synthetic evidence file can be saved. The profile panel can be hidden or reopened.
+
+Gaming Date filters the subject ledger. Entry gaming dates are calculated from event timestamps using the New York 06:00 cutoff. The event-time input uses the browser's local timezone. Selecting a posted ledger row enables correction; the original record is retained. Void requires a reason. Open a row to view details and download a demo receipt.
+
+CTR Review: filter the grid, inspect errors, verify complete records, select them and simulate approval. Then select approved CTRs and create a batch. Cash changes and report edits revoke verification/approval. Batch and History retain simulated submission and reconciliation. CSV exports the visible review/history records.
+
+Organization and Unknown searches match synthetic profiles in those categories. Create such profiles from Subject Manager if none exist. These are demonstration categories, not complete legal-entity KYC models.
+
+All data is synthetic, stored per browser, and resettable. No live payments, regulatory filings, authenticated permissions, or independently enforced approval roles are provided. Existing PostgreSQL records are not migrated. Java/Spring Boot source remains separate from the default public-demo runtime.
+
+## Validation
+
+Production Angular build passed. Seven data-layer tests passed, including integer-cent aggregation, gaming-day DST boundaries, persistence/rollback, and verification invalidation. Browser checks covered home navigation, subject search, mixed cash/noncash entry, profile/ledger rendering, CTR verification and simulated approval. The updated Playwright smoke suite is included for GitHub Actions; it was not executed as a full suite in this environment.
+
+---
+
 # Install the open browser demo
 
 This update replaces the default Render runtime with a lightweight Node static server and an Angular browser-local simulator. It requires no login, PostgreSQL, encryption key, or demo password. Existing Java/Spring Boot source remains in backend/ for reference; Dockerfile.backend preserves the prior image definition. The public demo does not run that backend.

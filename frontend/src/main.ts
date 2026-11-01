@@ -30,15 +30,101 @@ class App {
   get entryType() { return this.types.find(t => t['id'] === +this.txForm['typeId']); }
   get entryPatron() { return this.patrons.find(p => p['id'] === +this.txForm['patronId']); }
   get cashPreview() { return this.money(this.txForm['cash']); }
+  subjectSearch: Row = {kind:'PATRON',card:'',number:'',first:'',last:'',birth:'',identity:''};
+  searchResults: Row[] = [];
+  searchedSubjects = false;
+  searchOpen = true;
+  resultsOpen = true;
+  profileOpen = true;
+  selectedSubject: Row | null = null;
+  dayTransactions: Row[] = [];
+  entrySelection: number | null = null;
+  entryEditing: Row | null = null;
+  pendingEvidence: File | null = null;
+  entryTime = '';
+  entryDate = '';
+  ctrSearch: Row = {number:'',subject:'',first:'',last:'',date:'',state:'',incomplete:false};
+  ctrErrorsOpen = false;
+  launcher = [
+    {id:'patrons', label:'Subject Manager',icon:'subject',shortcuts:[{label:'Profiles',action:'profiles',icon:'person'},{label:'Create',action:'create',icon:'plus'}]},
+    {id:'entry', label:'Transaction Manager',icon:'transaction',shortcuts:[{label:'Entry',action:'entry',icon:'plus'},{label:'History',action:'history',icon:'document'}]},
+    {id:'SAR', label:'SAR Manager',icon:'search',shortcuts:[{label:'Review',action:'Review',icon:'check'},{label:'Batch',action:'Batch',icon:'document'},{label:'History',action:'History',icon:'history'}]},
+    {id:'CTR', label:'CTR Manager',icon:'cash',shortcuts:[{label:'Review',action:'Review',icon:'check'},{label:'Batch',action:'Batch',icon:'document'},{label:'History',action:'History',icon:'history'}]},
+    {id:'setup', label:'Setup Manager',icon:'settings',shortcuts:[{label:'Property',action:'property',icon:'shield'},{label:'Types',action:'types',icon:'settings'}]},
+    {id:'TAX', label:'Tax Forms Manager',icon:'tax',shortcuts:[{label:'Review',action:'Review',icon:'check'},{label:'W-9',action:'W-9 Register',icon:'document'}]},
+  ];
+  iconPath(key: string): string {
+    return ({home:'M3 14 15 4l12 10M7 12v15h16V12M12 27v-9h6v9',subject:'M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M4 14h8v8H4zM22 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M18 14h8v8h-8zM15 7V3m-3 2 3-2 3 2M9 26h12',person:'M15 14a5 5 0 1 0 0-10 5 5 0 0 0 0 10M6 27v-5a9 9 0 0 1 18 0v5',transaction:'M5 10a11 11 0 0 1 19-3m0-4v4h-4M25 20a11 11 0 0 1-19 3m0 4v-4h4M10 11h10v8H10zM15 12v6',plus:'M5 9h14M5 15h10M5 21h8M22 14v12m-6-6h12',search:'M20 20l8 8M14 24a10 10 0 1 0 0-20 10 10 0 0 0 0 20M10 10a4 4 0 1 1 8 0M8 19c0-5 12-5 12 0',check:'M9 6H5v22h20V6h-4M10 3h10v6H10zM9 18l4 4 8-9',document:'M9 3h17v22H9zM4 8v21h17M13 9h9M13 14h9M13 19h5',history:'M7 6h17v22H7zM11 3h9v6h-9zM11 14h9M11 19h9M11 24h5',cash:'M3 6h24v14H3zM7 23h20M10 26h17M15 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8M5 9h2m16 8h2',settings:'M15 3v4m0 16v4M3 15h4m16 0h4M6 6l3 3m12 12 3 3M6 24l3-3M21 9l3-3M15 23a8 8 0 1 0 0-16 8 8 0 0 0 0 16M15 19a4 4 0 1 0 0-8 4 4 0 0 0 0 8',shield:'M15 3l11 5v7c0 7-11 13-11 13S4 22 4 15V8zM15 6v18',tax:'M6 3h18v25H6zM10 9h10M10 14h6M10 20h4M21 17l7 11m-7 0 7-11'} as Row)[key] || 'M5 5h20v20H5z';
+  }
+  async launch(id:string, action='') {
+    if(id==='entry') { if(action==='history')await this.go('transactions'); else this.startEntry(); return; }
+    await this.go(id);
+    if(id==='patrons'&&action==='create')this.newPatron();
+    else if(this.isReport&&action)this.switchTab(action);
+  }
+  localDateTime(value = new Date().toISOString()) {
+    const d = new Date(value); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+  }
   startEntry() {
-    this.txForm = {sourceId: this.newSourceId(), occurredAt: new Date().toISOString(), station: 'Main cage', status: 'POSTED', gross: '', cash: '', reason: 'Synthetic demo entry'};
-    this.txSaved = null;
+    this.txForm = {sourceId: this.newSourceId(), occurredAt: new Date().toISOString(), station: 'Main cage', site: 'Juniper', status: 'POSTED', gross: '', cash: '', nonCash: '', reason: 'Synthetic demo entry', reference: 'DEMO-'+Date.now().toString().slice(-7)};
+    this.entryTime=this.localDateTime();this.entryDate=this.store.day();this.txSaved=null;this.entryEditing=null;this.entrySelection=null;this.pendingEvidence=null;
+    if(this.selectedSubject)this.txForm['patronId']=this.selectedSubject['id'];
     this.go('entry');
   }
-  async submitEntry() {
-    const ok = await this.run(async () => { this.txSaved = await this.api('/transactions', 'POST', this.txForm); }, 'Transaction saved in this browser');
-    if (ok) { this.txForm = {...this.txForm, sourceId: this.newSourceId(), gross: '', cash: '', reference: ''}; }
+  searchSubjects() {
+    const q=this.subjectSearch;
+    const text=(x:any)=>String(x||'').toLowerCase();
+    this.searchResults=this.patrons.filter(p=>!p['mergedInto'] && (p['subjectKind']||'PATRON')===q['kind'] &&
+      (!q['card']||text(p['loyaltyId']).includes(text(q['card']))) &&
+      (!q['number']||String(p['id']).includes(q['number'])||('AML'+String(p['id']).padStart(10,'0')).includes(String(q['number']).toUpperCase())) &&
+      (!q['first']||text(p['legalName']).includes(text(q['first']))) && (!q['last']||text(p['legalName']).includes(text(q['last']))) &&
+      (!q['birth']||p['dateOfBirth']===q['birth']) && (!q['identity']||text(p['identityNumber']).includes(text(q['identity']))));
+    this.searchedSubjects=true;this.resultsOpen=true;
   }
+  clearSubjectSearch() { this.subjectSearch={kind:'PATRON',card:'',number:'',first:'',last:'',birth:'',identity:''};this.searchResults=[];this.searchedSubjects=false; }
+  chooseSubject(p:Row) { this.selectedSubject=p;this.txForm['patronId']=p['id'];this.searchOpen=false;this.resultsOpen=false;this.profileOpen=true;this.entrySelection=null; }
+  get subjectTransactions() { return this.dayTransactions.filter(t=>t['patron'].id===this.selectedSubject?.['id']&&t['gamingDay']===this.entryDate); }
+  get entrySelected() { return this.dayTransactions.find(t=>t['id']===this.entrySelection); }
+  beginEditEntry() {
+    const t=this.entrySelected;if(!t)return;
+    this.entryEditing=t;this.txForm={...t,patronId:t['patron'].id,typeId:t['type'].id,sourceId:this.newSourceId(),nonCash:t['nonCash']||Math.max(0,t['gross']-t['cash']),reason:'Synthetic transaction correction'};this.entryTime=this.localDateTime(t['occurredAt']);this.error='';
+  }
+  cancelEntry() { this.startEntry(); }
+  entryFile(event:any) { const file=event.target.files?.[0];if(file&&file.size>1048576){this.error='Evidence must be 1 MiB or smaller.';event.target.value='';return;}this.pendingEvidence=file||null; }
+  async submitEntry() {
+    if(!this.selectedSubject){this.error='Search for and select a subject first.';return;}
+    const when=new Date(this.entryTime);if(!Number.isFinite(when.getTime())){this.error='Enter a valid transaction date and time.';return;}
+    const cash=Number(this.txForm['cash']||0),nonCash=Number(this.txForm['nonCash']||0);
+    const body={...this.txForm,patronId:this.selectedSubject['id'],occurredAt:when.toISOString(),cash:cash.toFixed(2),gross:(cash+nonCash).toFixed(2),nonCash:nonCash.toFixed(2)};
+    const ok=await this.run(async()=>{
+      this.txSaved=await this.api('/transactions'+(this.entryEditing?'/'+this.entryEditing['id']+'/correct':''),'POST',body);
+    },'Transaction saved in this browser');
+    if(ok){
+      this.entryDate=this.txSaved!['gamingDay'];this.entrySelection=this.txSaved!['id'];this.entryEditing=null;
+      if(this.pendingEvidence) {try{await this.store.attach(this.pendingEvidence,'Transaction',this.txSaved!['id']);}catch(e){this.error='Transaction saved, but evidence could not be saved: '+this.message(e);}}
+      this.pendingEvidence=null;this.txForm={...this.txForm,sourceId:this.newSourceId(),cash:'',nonCash:'',reference:'DEMO-'+Date.now().toString().slice(-7)};
+    }
+  }
+  async voidEntry() {const t=this.entrySelected;if(t)this.confirmAction('Transaction',t,'void');}
+  get ctrRows() {
+    const q=this.ctrSearch;
+    return this.filtered.filter(r=>(!q['number']||('CTR-'+r['id']).toLowerCase().includes(String(q['number']).toLowerCase()))&&
+      (!q['subject']||('AML'+String(r['patron'].id).padStart(10,'0')).includes(String(q['subject']).toUpperCase()))&&
+      (!q['first']||String(r['patron'].legalName).toLowerCase().includes(String(q['first']).toLowerCase()))&&
+      (!q['last']||String(r['patron'].legalName).toLowerCase().includes(String(q['last']).toLowerCase()))&&
+      (!q['date']||r['gamingDay']===q['date'])&&(!q['state']||r['status']===q['state'])&&(!q['incomplete']||this.ctrIssues(r).length>0));
+  }
+  ctrIssues(r:Row) {const p=r['patron']||{};return [!p.legalName?'Missing subject name':'',!p.address?'Missing address':'',p.identityStatus!=='VERIFIED'?'Identity needs review':'',Math.max(Number(r['cashIn']||0),Number(r['cashOut']||0))<=10000?'Below demo CTR threshold':''].filter(Boolean);}
+  clearCtrSearch() {this.ctrSearch={number:'',subject:'',first:'',last:'',date:'',state:'',incomplete:false};this.query='';this.filter='';}
+  async markCtrVerified(r:Row,event:any) { const checked=event.target.checked;if(checked&&this.ctrIssues(r).length){event.target.checked=false;this.error=this.ctrIssues(r).join('; ');return;}
+    await this.run(()=>this.api('/reports/'+r['id']+'/verify','POST',{verified:checked,reason:'Synthetic CTR review verification'}),'CTR verification updated');
+  }
+  async approveCtrSelection() {const targets=this.reports.filter(r=>this.selected.includes(r['id']));
+    if(!targets.length)return;
+    if(targets.some(r=>!r['verified']||this.ctrIssues(r).length)){this.error='Verify every selected CTR and resolve validation issues before simulated approval.';return;}
+    this.open('Approve selected CTRs',[this.f('reason','Review reason','textarea',true)],{},async v=>{for(const r of targets){if(['DRAFT','RETURNED'].includes(r['status']))await this.api('/reports/'+r['id']+'/review','POST',v);await this.api('/reports/'+r['id']+'/approve','POST',v);}});
+  }
+  exportCtr() {const cols=['CTR number','Gaming date','Cash in','Cash out','Subject','Name','State','Verified'];const rows=this.ctrRows.map(r=>['CTR-'+r['id'],r['gamingDay'],r['cashIn'],r['cashOut'],'AML'+String(r['patron'].id).padStart(10,'0'),r['patron'].legalName,r['status'],!!r['verified']]);const cell=(v:any)=>'"'+String(v??'').replaceAll('"','""')+'"';this.download([cols,...rows].map(row=>row.map(cell).join(',')).join('\r\n'),'MOCK-CTR-review.csv','text/csv');}
   downloadEvidence(a: Row) {
     const raw = atob(a['data'].split(',')[1]);
     const bytes = Uint8Array.from(raw, ch => ch.charCodeAt(0));
@@ -89,7 +175,7 @@ class App {
   editId: number | null = null;
   modalAction: ((v: Row) => Promise<any>) | null = null;
   menu = [
-    { id: "dashboard", label: "Overview", icon: "◈", group: "WORKSPACE" },
+    { id: "dashboard", label: "Home", icon: "◈", group: "WORKSPACE" },
     { id: "patrons", label: "Subject Manager", icon: "◎" },
     { id: "transactions", label: "Transaction Manager", icon: "⇄" },
     { id: "entry", label: "Transaction Entry", icon: "+" },
@@ -163,8 +249,9 @@ class App {
     if (!this.me) return;
     this.patrons = await this.api("/patrons");
     this.types = await this.api("/types");
+    if(this.selectedSubject)this.selectedSubject=this.patrons.find(p=>p["id"]===this.selectedSubject!["id"])||null;
     this.property = await this.api("/property");
-    if (this.page === "entry") { this.data = []; }
+    if (this.page === "entry") { this.data = []; this.dayTransactions = await this.api("/transactions"); }
     else if (this.page === "dashboard") {
       this.dashboard = await this.api("/dashboard");
       this.data = [];
@@ -326,6 +413,7 @@ class App {
   }
   newPatron(p?: Row) {
     const fields = [
+      this.f("subjectKind", "Subject category", "select", true, ['PATRON','ORGANIZATION','UNKNOWN'].map(x=>({value:x,label:this.label(x)}))),
       this.f("legalName", "Legal name", "text", true),
       this.f("aliasName", "Alias"),
       this.f("dateOfBirth", "Date of birth", "date", true),
@@ -380,6 +468,7 @@ class App {
       fields,
       p || {
         country: "US",
+        subjectKind: this.subjectSearch["kind"] || "PATRON",
         identityStatus: "UNVERIFIED",
         residency: "RESIDENT",
         identityType: "DEMO_ID",

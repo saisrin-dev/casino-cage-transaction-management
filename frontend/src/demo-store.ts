@@ -34,10 +34,12 @@ export class DemoStore {
     const amounts = [6500,4200,2800,1200,8750,3900,12000,450,3200,6700,950,2100,5800,1500,7600,2500,4800,1350];
     const transactions = amounts.map((cash,i) => {const type=types[i===1?0:i%4]; return {id:100+i,version:0,patron:patrons[i<2?0:i%names.length],type,typeLabel:type.label,treatment:type.treatment,gross:cash,cash,cashIn:type.treatment==='IN'?cash:0,cashOut:type.treatment==='OUT'?cash:0,occurredAt:now,gamingDay:this.day(now),gamingCutoff:'06:00',propertyZone:'America/New_York',sourceId:'DEMO-EVENT-'+i,reference:'DEMO-'+(2080+i),station:i%2?'VIP cage':'Main cage',status:'POSTED',cashier:'Demo visitor',notes:'Synthetic sample activity'};});
     const reports = [
-      {id:201,kind:'CTR',patron:patrons[0],cashIn:10700,cashOut:0,status:'PENDING_REVIEW'},
+      {id:201,kind:'CTR',patron:patrons[0],cashIn:16500,cashOut:0,status:'PENDING_REVIEW'},
       {id:202,kind:'SAR',patron:patrons[2],amount:8750,status:'DRAFT',category:'MINIMAL_PLAY',narrative:'Synthetic training scenario: repeated cash exchanges with minimal observed play.'},
       {id:203,kind:'TAX',patron:patrons[5],amount:12000,status:'APPROVED',formType:'W-2G',withholding:0,taxRuleVersion:'DEMO-2026'},
-      {id:204,kind:'CTR',patron:patrons[6],cashIn:12000,cashOut:0,status:'DRAFT'}
+      {id:204,kind:'CTR',patron:patrons[6],cashIn:12000,cashOut:0,status:'DRAFT'},
+      {id:205,kind:'CTR',patron:patrons[2],cashIn:10400,cashOut:0,status:'DRAFT'},
+      {id:206,kind:'CTR',patron:patrons[4],cashIn:13550,cashOut:0,status:'DRAFT'}
     ].map(r=>({...r,version:0,revision:1,gamingDay:this.day(now),dueDate:new Date(Date.now()+7*86400000).toISOString().slice(0,10),creator:'Demo maker',approver:r.status==='APPROVED'?'Demo approver':null,filingType:'INITIAL',filingStatus:'NOT_SUBMITTED',externalOutcome:'NONE',obligationOpen:true,fields:'{}'}));
     return {schema:1,seq:300,patrons,types,transactions,reports,batches:[],audit:[],attachments:[],subjects:[],versions:[],tasks:[{id:250,scope:'CTR',title:'Review Avery Juniper cash activity',description:'Aggregate cash in exceeds the demo threshold.',resolved:false},{id:251,scope:'SAR',title:'Assess synthetic minimal-play referral',description:'Review the training narrative and disposition.',resolved:false}],property:{id:1,version:0,name:'Juniper Casino',zone:'America/New_York',cutoff:'06:00',contact:'demo@example.invalid',reportingScope:'Single-property browser simulation'},configurations:[{id:1,code:'GAMING_DAY',payload:JSON.stringify({zone:'America/New_York',cutoff:'06:00',ctrThreshold:10000}),state:'ACTIVE'}],users:[{id:1,displayName:'Demo visitor',username:'visitor',roles:'SANDBOX',enabled:true}]};
   }
@@ -52,7 +54,7 @@ export class DemoStore {
         if(!r) {r=this.report({kind:'CTR',patronId:g.patron.id});this.state.reports.unshift(r);}
         const changed=r.cashIn!==g.cashIn/100||r.cashOut!==g.cashOut/100;
         r.cashIn=g.cashIn/100;r.cashOut=g.cashOut/100;
-        if(changed){r.status='DRAFT';r.approver=null;r.revision++;}
+        if(changed){r.status='DRAFT';r.approver=null;r.verified=false;r.revision++;}
       } else if(r) {r.cashIn=g.cashIn/100;r.cashOut=g.cashOut/100;r.status='SUPERSEDED';r.obligationOpen=false;}
     }
     for(const r of this.state.reports) if(r.kind==='CTR'&&!r.snapshot&&!groups.has(r.patron.id+':'+r.gamingDay)){r.status='SUPERSEDED';r.obligationOpen=false;}
@@ -98,6 +100,7 @@ export class DemoStore {
       const patron=s.patrons.find((p:Row)=>p.id===+body.patronId&&!p.mergedInto),type=s.types.find((t:Row)=>t.id===+body.typeId&&t.active);
       if(!patron||!type)throw Error('Choose a patron and an active transaction type.');
       const gross=this.cents(body.gross),cash=this.cents(body.cash);if(gross<=0||cash>gross)throw Error('Gross must be positive and cash cannot exceed gross.');
+      if(type.treatment==='NONCASH'&&cash>0)throw Error('A noncash transfer cannot include cash.');
       if(!body.reference?.trim()||!body.reason?.trim()||!body.station?.trim())throw Error('Reference, station, and reason are required.');
       if(s.transactions.some((t:Row)=>t.sourceId===body.sourceId))throw Error('This source event has already been recorded.');
       const day=this.day(body.occurredAt);if(new Date(body.occurredAt).getTime()>Date.now()+60000)throw Error('Event time cannot be in the future.');
@@ -110,8 +113,10 @@ export class DemoStore {
       const r=find();
       if(action==='correction'){const copy={...r,id:this.id(),corrects:{id:r.id},snapshot:null,status:'DRAFT',revision:1,filingStatus:'NOT_SUBMITTED',externalOutcome:'NONE',approver:null};s.reports.unshift(copy);return copy;}
       if(r.snapshot)throw Error('Filed snapshots are frozen. Create a correction version.');
-      if(action==='subjects'){const patron=s.patrons.find((p:Row)=>p.id===+body.patronId);if(!patron||patron.id===r.patron.id)throw Error('Choose an additional subject.');s.subjects.push({id:this.id(),reportId:id,patron,relationship:body.relationship});r.status='DRAFT';r.approver=null;return r;}
-      if(method==='PUT'){Object.assign(r,body,{status:'DRAFT',approver:null,revision:r.revision+1,fields:JSON.stringify(body)});}
+      if(action==='verify'){if(body.verified&&(!r.patron?.legalName||!r.patron?.address||r.patron?.identityStatus!=='VERIFIED'||Math.max(Number(r.cashIn||0),Number(r.cashOut||0))<=10000))throw Error('Resolve CTR validation issues before verification.');r.verified=!!body.verified;if(!r.verified&&r.status==='APPROVED'){r.status='DRAFT';r.approver=null;}this.audit('Report',id,'VERIFY',body.reason);return r;}
+      if(action==='subjects'){const patron=s.patrons.find((p:Row)=>p.id===+body.patronId);if(!patron||patron.id===r.patron.id)throw Error('Choose an additional subject.');s.subjects.push({id:this.id(),reportId:id,patron,relationship:body.relationship});r.status='DRAFT';r.approver=null;r.verified=false;return r;}
+      if(action==='approve'&&r.kind==='CTR'&&!r.verified)throw Error('Verify the CTR before simulated approval.');
+      if(method==='PUT'){Object.assign(r,body,{status:'DRAFT',approver:null,verified:false,revision:r.revision+1,fields:JSON.stringify(body)});}
       else {const transitions:Row={review:['DRAFT','RETURNED'],approve:['PENDING_REVIEW'],return:['PENDING_REVIEW'],reject:['PENDING_REVIEW'],close:['PENDING_REVIEW']};if(!transitions[action]?.includes(r.status))throw Error('Action is unavailable in the current report state.');r.status=({review:'PENDING_REVIEW',approve:'APPROVED',return:'RETURNED',reject:'REJECTED_INTERNALLY',close:'CLOSED_WITHOUT_FILING'} as Row)[action];if(action==='approve')r.approver='Simulated approver';}
       s.versions.unshift({id:this.id(),reportId:id,revision:r.revision,snapshot:JSON.stringify(r)});this.audit('Report',id,action||'EDIT',body.reason);return r;
     }
