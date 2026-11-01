@@ -201,7 +201,8 @@ class App {
     this.pageIndex = 0;
     this.selected = [];
     this.detail = null;
-    await this.run(() => this.load(), "");
+    this.data = [];
+    await this.run(async () => {}, "");
   }
   async load() {
     if (!this.me) return;

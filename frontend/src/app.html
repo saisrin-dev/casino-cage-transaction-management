@@ -423,8 +423,7 @@
               </tr>
             </thead>
             <tbody>
-              @for(r of rows;track r['id']){ @if(page==='patrons'||tab==='W-9
-              Register'){
+              @for(r of rows;track r['id']){ @if(page==='patrons'||tab==='W-9 Register'){
               <tr>
                 <td>
                   <button class="row-link" (click)="show(r)">
@@ -446,8 +445,7 @@
                   >
                 </td>
                 <td>
-                  {{tab==='W-9
-                  Register'?label(r['w9Status']):label(r['residency'])}}
+                  {{tab==='W-9 Register'?label(r['w9Status']):label(r['residency'])}}
                 </td>
                 <td class="right">
                   @if(tab==='W-9 Register'&&can('TAX')){<button
